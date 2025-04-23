@@ -5,15 +5,16 @@ import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { marked } from "marked";
 import { NextResponse } from 'next/server';
-import { beautifySystemPromptGenerate } from '@/prompts/beautifySystemPrompt.js'; // Import the prompt template
+// Use relative paths for imports within the API route
+import { beautifySystemPromptGenerate } from '../../../prompts/beautifySystemPrompt.js';
 // Node.js 环境中解析 HTML 需要库
 import jsdom from 'jsdom'; // 需要安装 jsdom: npm install jsdom 或 yarn add jsdom
 const { JSDOM } = jsdom;
 
-// 导入提取出来的 prompts
-import { analyzeParagraphStructureSystemPrompt } from '@/prompts/analyzeParagraphStructurePrompt.js';
-import { generateDocumentOutlineSystemPrompt } from '@/prompts/generateDocumentOutlinePrompt.js';
-import { beautifyHtmlLlmAdditionalInstructions } from '@/prompts/beautifyHtmlLlmInstructions.js';
+// 导入提取出来的 prompts (使用相对路径)
+import { analyzeParagraphStructureSystemPrompt } from '../../../prompts/analyzeParagraphStructurePrompt.js';
+import { generateDocumentOutlineSystemPrompt } from '../../../prompts/generateDocumentOutlinePrompt.js';
+import { beautifyHtmlLlmAdditionalInstructions } from '../../../prompts/beautifyHtmlLlmInstructions.js';
 
 
 // --- Helper Functions ---
@@ -450,7 +451,9 @@ const app = workflow.compile();
 // --- API Route Handler ---
 export async function POST(request) {
 	try {
-		const { markdown: originalMarkdown, prompt: userPrompt } = await request.json();
+		const body = await request.json();
+		console.log("请求体:", body);
+		const { markdown: originalMarkdown, prompt: userPrompt } = body;
 
 		if (!originalMarkdown) {
 			return NextResponse.json({ error: 'Markdown content is required.' }, { status: 400 });
@@ -489,6 +492,7 @@ export async function POST(request) {
 				console.warn("API: Processing completed with non-fatal error:", result.error);
 				responsePayload.warning = `Processing completed with issues: ${result.error}`;
 			}
+			console.log(responsePayload)
 			return NextResponse.json(responsePayload);
 		} else {
 			// 意外情况：没有错误但缺少必要输出

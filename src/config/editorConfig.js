@@ -415,6 +415,5 @@ export const pageContent = [
 	{ type: 'list', props: { content: '<li>进口商品价格上涨</li><li>出口竞争力提升</li><li>跨境资金流动受限</li>' } },
 	{ type: 'title', props: { content: '建议措施' } },
 	{ type: 'paragraph', props: { content: '请企业做好外汇风险管理，合理安排外汇收支时间。' } },
-	{ type: 'content', props: { content: 'AAAAAA' } },
 	{ type: 'ending', props: { content: 'END' } }
 ]; 

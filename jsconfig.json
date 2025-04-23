@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
+    "jsx": "react",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@/prompts": ["./src/prompts/*"]
+    },
+    "resolveJsonModule": true
   }
 }

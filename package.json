@@ -9,14 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@langchain/core": "^0.3.45",
     "@langchain/langgraph": "^0.0.21",
     "@langchain/openai": "^0.0.28",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
     "@uiw/react-md-editor": "^4.0.4",
     "jsdom": "^26.1.0",
     "marked": "^12.0.2",
     "next": "15.3.1",
     "react": "^19.0.0",
+    "react-color": "^2.19.3",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {

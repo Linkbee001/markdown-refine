@@ -1,0 +1,75 @@
+{
+	"finalHtml": "<div id=\"doc-root\">\n    <h1 id=\"title-1\">今日汇率</h1>\n    <p id=\"date-1\" class=\"special-date\">2024.11.6/星期二</p>\n    <div id=\"para-wrapper-1\">\n      <p id=\"text-1\">今日官方汇率：909(央行)</p>\n      <p id=\"text-2\">今日黑市汇率：1050</p>\n    </div>\n    <div id=\"img-wrapper-1\" class=\"image-style-default\">\n      <img id=\"img-1\" src=\"https://via.placeholder.com/600x200?text=Placeholder+Image\" alt=\"Placeholder Image\">\n    </div>\n    <p id=\"end-1\" class=\"special-ending\">END</p>\n  </div>",
+	"documentOutline": [
+		{
+			"id": "title-1",
+			"type": "heading",
+			"contentPreview": "今日汇率",
+			"tagName": "h1",
+			"specialComponents": []
+		},
+		{
+			"id": "date-1",
+			"type": "date",
+			"contentPreview": "2024.11.6/星期二",
+			"tagName": "p",
+			"specialComponents": [
+				{
+					"type": "date",
+					"content": "2024.11.6"
+				}
+			]
+		},
+		{
+			"id": "para-wrapper-1",
+			"type": "paragraph-wrapper",
+			"contentPreview": "官方与黑市汇率...",
+			"tagName": "div",
+			"specialComponents": [],
+			"children": [
+				{
+					"id": "text-1",
+					"type": "paragraph",
+					"contentPreview": "今日官方汇率：909(央行)",
+					"tagName": "p",
+					"specialComponents": []
+				},
+				{
+					"id": "text-2",
+					"type": "paragraph",
+					"contentPreview": "今日黑市汇率：1050",
+					"tagName": "p",
+					"specialComponents": []
+				}
+			]
+		},
+		{
+			"id": "img-wrapper-1",
+			"type": "image-wrapper",
+			"contentPreview": "图片容器",
+			"tagName": "div",
+			"specialComponents": [],
+			"children": [
+				{
+					"id": "img-1",
+					"type": "image",
+					"contentPreview": "Placeholder Image",
+					"tagName": "img",
+					"specialComponents": []
+				}
+			]
+		},
+		{
+			"id": "end-1",
+			"type": "ending",
+			"contentPreview": "END",
+			"tagName": "p",
+			"specialComponents": [
+				{
+					"type": "ending",
+					"content": "END"
+				}
+			]
+		}
+	]
+}

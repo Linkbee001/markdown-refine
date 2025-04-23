@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
 // Import Config & Default Content
 import { defaultHtml, DEFAULT_STYLE_CONFIG, pageContent as defaultPageContent, componentTypes } from '../config/editorConfig';
@@ -28,6 +29,7 @@ const camelToKebab = (str) => {
 };
 
 export default function Home() {
+  const router = useRouter();
   // --- Core State ---
   const [markdown, setMarkdown] = useState(`# 今日汇率报告\n\n2024.11.6/星期二\n\n...`); // Initial Markdown
   const [prompt, setPrompt] = useState('使用简洁专业的技术博客风格...'); // Initial Prompt
@@ -95,21 +97,33 @@ export default function Home() {
         body: JSON.stringify({ markdown, prompt }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || `HTTP error! status: ${response.status}`);
-      if (data.finalHtml) {
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (data.finalHtml && data.documentOutline) {
+        sessionStorage.setItem('beautifierHtml', data.finalHtml);
+        sessionStorage.setItem('beautifierOutline', JSON.stringify(data.documentOutline));
+        router.push('/beautifier');
+      } else if (data.finalHtml) {
+        console.warn("API returned HTML but no document outline. Displaying preview here.");
         setHtmlResult(data.finalHtml);
         setTempHtmlResult(data.finalHtml);
         updatePreviewWithStyles(data.finalHtml ? data.finalHtml : {});
+        setError('处理完成，但缺少文档结构信息，无法进入编辑模式。');
       } else {
-        setError(data.error || 'Received an unexpected response.');
+        setError(data.error || 'API 响应缺少必要的数据 (finalHtml 或 documentOutline)。');
       }
     } catch (e) {
       console.error("Frontend Error calling /api/beautify:", e);
-      setError(`Failed to process: ${e.message}`);
+      setError(`处理失败: ${e.message}`);
+      setHtmlResult('');
+      setTempHtmlResult('');
     } finally {
       setIsLoading(false);
     }
-  }, [markdown, prompt, setHtmlResult, setTempHtmlResult, setCustomStyles, updatePreviewWithStyles, setIsLoading, setError, setCopyButtonText]);
+  }, [markdown, prompt, router, updatePreviewWithStyles, setIsLoading, setError, setCopyButtonText, setCustomStyles, setHtmlResult, setTempHtmlResult]);
 
   // Handle Loading Test HTML
   const handleLoadTestHTML = useCallback(() => {
