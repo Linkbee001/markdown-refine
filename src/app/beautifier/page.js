@@ -338,4 +338,4 @@ export default function BeautifierEditorPage() { // Renamed function to match ex
 			</Box>
 		</Box>
 	);
-}
+} 

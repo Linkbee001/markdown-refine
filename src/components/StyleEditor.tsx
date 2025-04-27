@@ -30,6 +30,10 @@ interface StyleProperties {
   margin: string;
   fontSize: string;
   fontWeight: string;
+  flexDirection: string;
+  justifyContent: string;
+  alignItems: string;
+  gap: string;
   // 添加更多样式属性...
 }
 
@@ -103,25 +107,6 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         flexDirection: "column",
       }}
     >
-      <Typography variant="h6" sx={{ mb: 1, flexShrink: 0 }}>
-        样式编辑器 - {elementType}
-        {elementTagName && (
-          <Typography
-            component="span"
-            variant="body2"
-            sx={{ ml: 1, color: "gray" }}
-          >
-            (标签: {elementTagName.toUpperCase()})
-          </Typography>
-        )}
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{ mb: 2, color: "text.secondary", flexShrink: 0 }}
-      >
-        ID: {elementId}
-      </Typography>
-
       <Tabs
         value={currentTab}
         onChange={handleTabChange}
@@ -132,10 +117,10 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         <Tab label="间距" />
       </Tabs>
 
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+      <Box sx={{ flexGrow: 1, flexShrink: 1, overflowY: "auto" }}>
         {currentTab === 0 && (
           <Box sx={{ p: 1 }}>
-            <Accordion defaultExpanded>
+            <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography>颜色</Typography>
               </AccordionSummary>
@@ -166,13 +151,17 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       />
                     </Box>
                     {colorPickerOpen === "backgroundColor" && (
-                      <Box sx={{ mt: 1, mb: 2 }}>
-                        <SketchPicker
-                          color={styles.backgroundColor || "#ffffff"}
-                          onChange={(color) =>
-                            handleColorChange("backgroundColor", color)
-                          }
-                        />
+                      <Box sx={{ position: "relative", zIndex: 2 }}>
+                        <Box
+                          sx={{ position: "absolute", top: "100%", mt: 0.5 }}
+                        >
+                          <SketchPicker
+                            color={styles.backgroundColor || "#ffffff"}
+                            onChange={(color) =>
+                              handleColorChange("backgroundColor", color)
+                            }
+                          />
+                        </Box>
                       </Box>
                     )}
                   </Grid>
@@ -202,13 +191,17 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       />
                     </Box>
                     {colorPickerOpen === "color" && (
-                      <Box sx={{ mt: 1, mb: 2 }}>
-                        <SketchPicker
-                          color={styles.color || "#000000"}
-                          onChange={(color) =>
-                            handleColorChange("color", color)
-                          }
-                        />
+                      <Box sx={{ position: "relative", zIndex: 2 }}>
+                        <Box
+                          sx={{ position: "absolute", top: "100%", mt: 0.5 }}
+                        >
+                          <SketchPicker
+                            color={styles.color || "#000000"}
+                            onChange={(color) =>
+                              handleColorChange("color", color)
+                            }
+                          />
+                        </Box>
                       </Box>
                     )}
                   </Grid>
@@ -247,13 +240,17 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       />
                     </Box>
                     {colorPickerOpen === "borderColor" && (
-                      <Box sx={{ mt: 1, mb: 2 }}>
-                        <SketchPicker
-                          color={styles.borderColor || "#cccccc"}
-                          onChange={(color) =>
-                            handleColorChange("borderColor", color)
-                          }
-                        />
+                      <Box sx={{ position: "relative", zIndex: 2 }}>
+                        <Box
+                          sx={{ position: "absolute", top: "100%", mt: 0.5 }}
+                        >
+                          <SketchPicker
+                            color={styles.borderColor || "#cccccc"}
+                            onChange={(color) =>
+                              handleColorChange("borderColor", color)
+                            }
+                          />
+                        </Box>
                       </Box>
                     )}
                   </Grid>
@@ -294,7 +291,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         )}
         {currentTab === 1 && (
           <Box sx={{ p: 1 }}>
-            <Accordion defaultExpanded>
+            <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography>字体</Typography>
               </AccordionSummary>
@@ -351,52 +348,158 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         )}
         {currentTab === 2 && (
           <Box sx={{ p: 1 }}>
-            <Accordion defaultExpanded>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>内边距 (Padding)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  内边距:
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={styles.padding || ""}
-                  onChange={(e) => handleStyleChange("padding", e.target.value)}
-                  placeholder="例如: 10px 或 5px 10px"
-                />
-              </AccordionDetails>
-            </Accordion>
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>外边距 (Margin)</Typography>
+                <Typography>布局 (Flexbox)</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  外边距:
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={styles.margin || ""}
-                  onChange={(e) => handleStyleChange("margin", e.target.value)}
-                  placeholder="例如: 10px 或 0 auto"
-                />
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Flex Direction:
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={styles.flexDirection || ""}
+                      onChange={(e) =>
+                        handleStyleChange("flexDirection", e.target.value)
+                      }
+                    >
+                      <MenuItem value="">默认</MenuItem>
+                      <MenuItem value="row">row</MenuItem>
+                      <MenuItem value="row-reverse">row-reverse</MenuItem>
+                      <MenuItem value="column">column</MenuItem>
+                      <MenuItem value="column-reverse">column-reverse</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Justify Content:
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={styles.justifyContent || ""}
+                      onChange={(e) =>
+                        handleStyleChange("justifyContent", e.target.value)
+                      }
+                    >
+                      <MenuItem value="">默认</MenuItem>
+                      <MenuItem value="flex-start">flex-start</MenuItem>
+                      <MenuItem value="flex-end">flex-end</MenuItem>
+                      <MenuItem value="center">center</MenuItem>
+                      <MenuItem value="space-between">space-between</MenuItem>
+                      <MenuItem value="space-around">space-around</MenuItem>
+                      <MenuItem value="space-evenly">space-evenly</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Align Items:
+                  </Typography>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={styles.alignItems || ""}
+                      onChange={(e) =>
+                        handleStyleChange("alignItems", e.target.value)
+                      }
+                    >
+                      <MenuItem value="">默认</MenuItem>
+                      <MenuItem value="stretch">stretch</MenuItem>
+                      <MenuItem value="flex-start">flex-start</MenuItem>
+                      <MenuItem value="flex-end">flex-end</MenuItem>
+                      <MenuItem value="center">center</MenuItem>
+                      <MenuItem value="baseline">baseline</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Gap:
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={styles.gap || ""}
+                    onChange={(e) => handleStyleChange("gap", e.target.value)}
+                    placeholder="例如: 10px 或 1rem"
+                  />
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>Padding</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Padding (所有):
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={styles.padding || ""}
+                    onChange={(e) =>
+                      handleStyleChange("padding", e.target.value)
+                    }
+                    placeholder="例如: 10px 或 1rem"
+                  />
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>Margin</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    Margin (所有):
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={styles.margin || ""}
+                    onChange={(e) =>
+                      handleStyleChange("margin", e.target.value)
+                    }
+                    placeholder="例如: 10px 或 1rem"
+                  />
+                </Box>
               </AccordionDetails>
             </Accordion>
           </Box>
         )}
       </Box>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleApplyStyles}
-        sx={{ mt: 2, width: "100%", flexShrink: 0 }}
-      >
-        应用样式
-      </Button>
+      {colorPickerOpen && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 1, // 确保在颜色选择器下方
+          }}
+          onClick={() => toggleColorPicker(null)} // 点击外部关闭
+        />
+      )}
+
+      <Box sx={{ p: 2, borderTop: "1px solid #e0e0e0" }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleApplyStyles}
+          disabled={!elementId}
+          fullWidth
+        >
+          应用样式
+        </Button>
+      </Box>
     </Box>
   );
 };

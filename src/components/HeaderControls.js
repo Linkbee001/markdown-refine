@@ -1,11 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { styleExamples } from '../config/editorConfig';
+import {
+	AppBar,
+	Toolbar,
+	Typography,
+	Button,
+	Box,
+	Menu,
+	MenuItem,
+	CircularProgress
+} from '@mui/material';
+import { useTranslation } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function HeaderControls({
-	prompt,
-	setPrompt,
 	isLoading,
 	onBeautify,
 	onLoadTestHTML,
@@ -14,125 +23,120 @@ export default function HeaderControls({
 	htmlResult,
 	onExport,
 }) {
-	const [isShowingExamples, setIsShowingExamples] = useState(false);
-	const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+	const { t } = useTranslation();
+	const [exportAnchorEl, setExportAnchorEl] = useState(null);
+	const isExportMenuOpen = Boolean(exportAnchorEl);
 
-	const handleSelectStyle = (selectedPrompt) => {
-		setPrompt(selectedPrompt);
-		setIsShowingExamples(false);
+	const handleExportMenuClick = (event) => {
+		setExportAnchorEl(event.currentTarget);
+	};
+
+	const handleExportMenuClose = () => {
+		setExportAnchorEl(null);
+	};
+
+	const handleExportAction = (format) => {
+		onExport(format);
+		handleExportMenuClose();
 	};
 
 	return (
-		<div className="p-4 bg-white border-b border-gray-200 flex items-center gap-4 flex-wrap shadow-sm">
-			<h1 className="text-xl font-bold text-gray-800 mr-auto">Markdown 美化器</h1>
-			<div className="flex-grow md:flex-grow-0 md:w-96 relative">
-				<label htmlFor="prompt" className="sr-only">
-					风格提示
-				</label>
-				<div className="flex items-center">
-					<input
-						type="text"
-						id="prompt"
-						className="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-						value={prompt}
-						onChange={(e) => setPrompt(e.target.value)}
-						placeholder="输入风格提示 (例如：暗色主题)..."
+		<AppBar position="static" color="default" elevation={1}>
+			<Toolbar sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: { xs: 1, sm: 2 } }}>
+				<Typography variant="h6" component="h1" sx={{ flexGrow: 1, mr: 2, whiteSpace: 'nowrap' }}>
+					{t('beautifier.title')}
+				</Typography>
+				<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+					<LanguageSwitcher sx={{ mr: 1 }} />
+
+					<Button
+						variant="contained"
+						color="primary"
+						onClick={onBeautify}
 						disabled={isLoading}
-					/>
-					<button
-						onClick={() => setIsShowingExamples(!isShowingExamples)}
-						className="ml-2 text-blue-600 hover:text-blue-800 text-sm whitespace-nowrap"
-						disabled={isLoading}
+						startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+						sx={{ minWidth: '100px' }}
 					>
-						样式示例
-					</button>
-				</div>
+						{t('beautifier.beautify')}
+					</Button>
 
-				{isShowingExamples && (
-					<div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-						{styleExamples.map((style, index) => (
-							<button
-								key={index}
-								className="block w-full text-left p-2 hover:bg-gray-100 text-sm border-b border-gray-100 last:border-b-0"
-								onClick={() => handleSelectStyle(style.prompt)}
-							>
-								<span className="font-medium">{style.name}</span>
-								<p className="text-xs text-gray-500 truncate">{style.prompt}</p>
-							</button>
-						))}
-					</div>
-				)}
-			</div>
-			<button
-				onClick={onBeautify}
-				disabled={isLoading}
-				className={`px-4 py-2 text-white font-medium rounded-md transition-colors min-w-[100px] text-center ${isLoading
-					? 'bg-gray-400 cursor-not-allowed'
-					: 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-					}`}
-			>
-				{isLoading ? '处理中...' : 'AI 美化'}
-			</button>
+					<Button
+						variant="contained"
+						color="success"
+						onClick={onLoadTestHTML}
+						disabled={isLoading}
+						sx={{ minWidth: '100px' }}
+					>
+						{t('beautifier.testData')}
+					</Button>
 
-			<button
-				onClick={onLoadTestHTML}
-				disabled={isLoading}
-				className={`px-4 py-2 text-white font-medium rounded-md transition-colors min-w-[100px] text-center ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'}`}
-			>
-				快速测试
-			</button>
+					<Button
+						variant="contained"
+						onClick={onCopyHtml}
+						disabled={!htmlResult || isLoading}
+						sx={{
+							minWidth: '100px',
+							bgcolor: (!htmlResult || isLoading)
+								? 'grey.300'
+								: copyButtonText.includes('失败') || copyButtonText.includes('Failed')
+									? 'error.main'
+									: copyButtonText.includes('已复制') || copyButtonText.includes('Copied')
+										? 'success.light'
+										: 'secondary.main',
+							'&:hover': {
+								bgcolor: (!htmlResult || isLoading)
+									? 'grey.300'
+									: copyButtonText.includes('失败') || copyButtonText.includes('Failed')
+										? 'error.dark'
+										: copyButtonText.includes('已复制') || copyButtonText.includes('Copied')
+											? 'success.main'
+											: 'secondary.dark',
+							}
+						}}
+					>
+						{copyButtonText}
+					</Button>
 
-			<button
-				onClick={onCopyHtml}
-				disabled={!htmlResult || isLoading}
-				className={`px-4 py-2 text-white font-medium rounded-md transition-colors min-w-[100px] text-center ${!htmlResult || isLoading
-					? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-					: copyButtonText.includes('失败')
-						? 'bg-red-500 hover:bg-red-600'
-						: copyButtonText.includes('已复制')
-							? 'bg-green-500 hover:bg-green-600'
-							: 'bg-indigo-600 hover:bg-indigo-700'
-					} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-			>
-				{copyButtonText}
-			</button>
-
-			{/* 导出按钮 */}
-			<div className="relative">
-				<button
-					onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-					disabled={!htmlResult || isLoading}
-					className={`px-4 py-2 text-white font-medium rounded-md transition-colors min-w-[100px] text-center ${!htmlResult || isLoading
-						? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-						: 'bg-amber-600 hover:bg-amber-700'
-						} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500`}
-				>
-					导出
-				</button>
-
-				{isExportMenuOpen && (
-					<div className="absolute z-20 mt-1 right-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
-						<button
-							className="w-full text-left p-2 hover:bg-gray-100 text-sm border-b border-gray-100"
-							onClick={() => { onExport('html'); setIsExportMenuOpen(false); }}
+					<Box>
+						<Button
+							variant="contained"
+							onClick={handleExportMenuClick}
+							disabled={!htmlResult || isLoading}
+							sx={{
+								minWidth: '100px',
+								bgcolor: (!htmlResult || isLoading) ? 'grey.300' : 'warning.main',
+								'&:hover': {
+									bgcolor: (!htmlResult || isLoading) ? 'grey.300' : 'warning.dark',
+								}
+							}}
+							aria-controls={isExportMenuOpen ? 'export-menu' : undefined}
+							aria-haspopup="true"
+							aria-expanded={isExportMenuOpen ? 'true' : undefined}
 						>
-							导出为 HTML
-						</button>
-						<button
-							className="w-full text-left p-2 hover:bg-gray-100 text-sm border-b border-gray-100"
-							onClick={() => { onExport('image'); setIsExportMenuOpen(false); }}
+							{t('beautifier.export')}
+						</Button>
+						<Menu
+							id="export-menu"
+							anchorEl={exportAnchorEl}
+							open={isExportMenuOpen}
+							onClose={handleExportMenuClose}
+							MenuListProps={{
+								'aria-labelledby': 'export-button',
+							}}
 						>
-							导出为图片
-						</button>
-						<button
-							className="w-full text-left p-2 hover:bg-gray-100 text-sm"
-							onClick={() => { onExport('markdown'); setIsExportMenuOpen(false); }}
-						>
-							导出为 Markdown
-						</button>
-					</div>
-				)}
-			</div>
-		</div>
+							<MenuItem onClick={() => handleExportAction('html')}>
+								{t('common.exportAs', { format: 'HTML' })}
+							</MenuItem>
+							<MenuItem onClick={() => handleExportAction('image')}>
+								{t('common.exportAs', { format: t('common.image') })}
+							</MenuItem>
+							<MenuItem onClick={() => handleExportAction('markdown')}>
+								{t('common.exportAs', { format: 'Markdown' })}
+							</MenuItem>
+						</Menu>
+					</Box>
+				</Box>
+			</Toolbar>
+		</AppBar>
 	);
 } 

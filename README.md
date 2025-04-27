@@ -1,113 +1,268 @@
-# Buity-Create
+# Markdown 美化器 (Markdown Beautifier)
 
-Buity-Create 是一个基于 Next.js 框架开发的 Markdown 美化工具，它能够将用户输入的 Markdown 内容转换为美观、适合移动设备显示的 HTML 内容。项目利用 AI 技术（通过 OpenRouter API 与 Anthropic Claude 模型集成）来智能地将基础 HTML 美化为符合用户指定风格的内容，并保持内容在富文本编辑器中的兼容性。
+<p align="center">
+  <img src="public/logo.png" alt="Markdown Beautifier Logo" width="200" height="200" />
+</p>
 
-## 核心功能
+<p align="center">
+  <a href="README.md">中文</a> | <a href="README.en.md">English</a>
+</p>
 
-1. **Markdown 编辑与预览**：用户可以输入 Markdown 内容并实时预览
-2. **风格定制**：用户可以通过文本提示描述期望的风格（如"暗色主题"、"科技蓝"等）
-3. **AI 美化**：利用 LLM 模型将基础 HTML 转换为美观、风格化的 HTML
-4. **移动端预览**：在界面右侧展示模拟移动设备的预览效果
-5. **HTML 复制**：一键复制美化后的 HTML 代码，方便粘贴到其他富文本编辑器
+一个强大的 Markdown 美化工具，使用 AI 技术帮助你优化 Markdown 文档的格式与样式，使其更加专业和美观。
 
-## 新增功能 - 组件化编辑系统
+## ✨ 功能特性
 
-最新版本引入了组件化编辑系统，支持以下功能：
+- 🤖 **AI 驱动美化**：使用人工智能优化 Markdown 格式与表现
+- 🎨 **样式编辑器**：可视化编辑 HTML 元素样式，调整排版、颜色和布局
+- 📱 **响应式设计**：完美适配桌面和移动设备
+- 🌐 **国际化支持**：支持中文和英文界面
+- 📤 **多格式导出**：导出为 HTML、Markdown 和图片格式
+- 🔄 **实时预览**：即时查看美化效果
+- 🧩 **组件化布局**：灵活调整文档结构
+- 📊 **内容大纲**：自动生成文档结构大纲
 
-### 1. 组件大纲导航
+## 🛠️ 技术栈
 
-- 在右侧预览面板左侧显示组件导航栏
-- 支持不同组件类型选择：标题、日期、正文内容、列表、代码块、引用、图片、结尾
-- 点击组件类型可以打开对应的样式编辑器
+- [Next.js](https://nextjs.org/) - React 框架
+- [React](https://reactjs.org/) - 用户界面库
+- [Material UI](https://mui.com/) - UI 组件库
+- [OpenRouter](https://openrouter.ai/) / [OpenAI](https://openai.com/) / [Anthropic](https://www.anthropic.com/) - 提供AI模型支持
 
-### 2. 组件样式编辑
+## 📦 安装
 
-- 为每种组件提供专属的样式编辑面板
-- 支持调整字体大小、颜色、背景色、对齐方式等样式属性
-- 提供预设样式模板，一键应用常用样式
-
-### 3. 样式配置管理
-
-- 保存自定义样式配置，实现样式重用
-- 管理多个样式配置方案
-- 加载保存的样式配置并应用到当前文档
-
-### 4. 导出功能
-
-- 导出为 HTML 文件
-- 导出为图片
-- 导出为 Markdown (即将推出)
-
-## 使用指南
-
-### 基本使用流程
-
-1. 在左侧编辑器中输入 Markdown 内容
-2. 在顶部输入框中描述期望的风格
-3. 点击"AI 美化"按钮生成美化效果
-4. 在右侧查看预览效果
-
-### 组件样式编辑
-
-1. 生成美化效果后，点击左侧组件导航栏中的组件类型
-2. 在弹出的样式编辑器中调整样式属性
-3. 点击"应用样式"保存更改，或"取消"放弃更改
-
-### 样式配置管理
-
-1. 点击组件导航栏底部的"样式配置管理"按钮
-2. 输入配置名称并点击"保存"来保存当前样式设置
-3. 要应用保存的样式，点击配置列表中的"加载"
-4. 要删除样式配置，点击配置列表中的"删除"
-
-### 导出文档
-
-1. 点击顶部的"导出"按钮
-2. 从下拉菜单中选择导出格式：HTML、图片或Markdown
-3. 根据提示保存导出的文件
-
-## 技术实现
-
-新功能在技术上实现了以下几点：
-
-1. **组件化设计**：将文章内容拆分为独立组件，每个组件有自己的样式属性
-2. **状态管理**：使用React useState钩子管理组件状态和样式设置
-3. **本地存储**：使用localStorage保存用户的样式配置
-4. **DOM操作**：使用DOMParser在客户端解析和修改HTML
-5. **样式注入**：通过内联样式实现样式更新和预览
-
-## 未来计划
-
-1. **更多样式预设**：增加更多行业特定的样式模板
-2. **更强大的导出功能**：支持更多导出格式和选项
-3. **协作分享**：分享样式配置给其他用户
-4. **响应式设计预览**：在不同设备尺寸下预览效果
-5. **高级动效**：增加简单的动画效果选项
-
-## 安装与运行
+1. 克隆仓库
 
 ```bash
-# 安装依赖
+git clone https://github.com/username/markdown-beautifier.git
+cd markdown-beautifier
+```
+
+2. 安装依赖
+
+```bash
 npm install
 # 或
+yarn install
+# 或
 pnpm install
+```
 
-# 启动开发服务器
+3. 创建环境变量文件
+
+复制示例环境变量文件并根据需要修改：
+
+```bash
+cp .env.example .env.local
+```
+
+请确保至少配置了必要的 API 密钥:
+- 对于前端：`NEXT_PUBLIC_AI_API_KEY`
+- 对于后端：`AI_API_KEY`
+
+如果环境中没有示例文件，可以手动创建 `.env.local`，包含以下内容：
+
+```
+# 后端LLM相关配置
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://openrouter.ai/api/v1
+AI_DEFAULT_MODEL=anthropic/claude-3.7-sonnet
+AI_FALLBACK_MODEL=anthropic/claude-3-haiku
+AI_OUTLINE_MODEL=anthropic/claude-3.7-sonnet
+AI_DEFAULT_TEMPERATURE=0.1
+AI_OUTLINE_TEMPERATURE=0.0
+
+# 前端AI API配置
+NEXT_PUBLIC_AI_API_URL=https://api.openrouter.ai/api/v1/chat/completions
+NEXT_PUBLIC_AI_API_KEY=your_api_key_here
+NEXT_PUBLIC_AI_MODEL_NAME=anthropic/claude-3-haiku-20240307
+NEXT_PUBLIC_AI_MAX_TOKENS=4000
+NEXT_PUBLIC_AI_TEMPERATURE=0.7
+
+# 应用信息
+NEXT_PUBLIC_APP_NAME=Markdown Beautifier
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+4. 启动开发服务器
+
+```bash
 npm run dev
+# 或
+yarn dev
 # 或
 pnpm dev
 ```
 
-## 环境变量配置
+5. 访问 [http://localhost:3000](http://localhost:3000) 查看应用
 
-创建 `.env.local` 文件并设置以下环境变量：
+## 🚀 使用方法
+
+1. 在主编辑器中输入或粘贴 Markdown 内容
+2. 输入样式提示（例如："使用简洁专业的技术博客风格..."）
+3. 点击 "AI 美化" 按钮
+4. 查看美化后的结果并根据需要调整样式
+5. 导出为所需格式（HTML、图片或 Markdown）
+
+## ⚙️ 配置
+
+### AI API 配置
+
+本项目使用外部 AI API 服务实现 Markdown 美化功能。您需要在 `.env.local` 文件中配置以下 AI 相关的环境变量：
 
 ```
-OPENROUTER_API_KEY=your_api_key_here
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=Buity-Create
+# AI API 配置
+NEXT_PUBLIC_AI_API_URL=https://api.openrouter.ai/api/v1/chat/completions  # AI API 端点
+NEXT_PUBLIC_AI_API_KEY=your_api_key_here  # API 密钥
+NEXT_PUBLIC_AI_MODEL_NAME=anthropic/claude-3-haiku-20240307  # 默认模型名称
+NEXT_PUBLIC_AI_MAX_TOKENS=4000  # 最大输出令牌数
+NEXT_PUBLIC_AI_TEMPERATURE=0.7  # 温度参数，控制输出随机性
+NEXT_PUBLIC_AI_SUPPORTED_MODELS=anthropic/claude-3-haiku-20240307,openai/gpt-3.5-turbo  # 支持的模型列表（逗号分隔）
 ```
 
-## 许可证
+### LLM 服务配置（后端）
 
-[MIT](LICENSE)
+后端 API 使用 LangChain 和 LangGraph 处理 Markdown 文件并生成美化后的 HTML。您可以在 `.env.local` 中配置以下环境变量来自定义 LLM 服务行为：
+
+```
+# LLM 服务配置（后端API使用）
+AI_API_KEY=your_api_key_here  # 后端 API 密钥（必需）
+AI_BASE_URL=https://openrouter.ai/api/v1  # API 基础 URL
+
+# 模型配置
+AI_DEFAULT_MODEL=anthropic/claude-3.7-sonnet  # 默认模型
+AI_FALLBACK_MODEL=anthropic/claude-3-haiku  # 后备模型（当默认模型不可用时）
+AI_OUTLINE_MODEL=anthropic/claude-3.7-sonnet  # 用于生成文档大纲的模型
+
+# 生成参数
+AI_DEFAULT_TEMPERATURE=0.1  # 默认温度参数
+AI_OUTLINE_TEMPERATURE=0.0  # 大纲生成温度参数（较低以获得确定性结果）
+
+# 应用信息（用于API请求标头）
+NEXT_PUBLIC_APP_NAME=Markdown Beautifier  # 应用名称
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # 应用 URL
+```
+
+如果您未设置上述某些变量，系统将使用默认值。但 `AI_API_KEY` 是必需的，没有它，美化功能将无法工作。
+
+#### 支持的 AI 服务提供商
+
+项目默认支持以下 AI 服务提供商（通过 OpenRouter 或直接 API）：
+
+1. **OpenRouter**（推荐）
+   - 支持多种模型，包括 Anthropic Claude 和 OpenAI GPT 系列
+   - 获取 API 密钥：[OpenRouter](https://openrouter.ai/)
+
+2. **OpenAI**
+   - 支持 GPT-3.5-Turbo 和 GPT-4 系列模型
+   - 获取 API 密钥：[OpenAI Platform](https://platform.openai.com/)
+   - 设置 `NEXT_PUBLIC_AI_API_URL=https://api.openai.com/v1/chat/completions`
+
+3. **Anthropic**
+   - 支持 Claude 系列模型
+   - 获取 API 密钥：[Anthropic Console](https://console.anthropic.com/)
+   - 设置 `NEXT_PUBLIC_AI_API_URL=https://api.anthropic.com/v1/messages`
+
+#### 配置自定义 AI 模型
+
+若要使用不同的 AI 模型，请修改 `NEXT_PUBLIC_AI_MODEL_NAME` 环境变量。默认值为 `anthropic/claude-3-haiku-20240307`。
+
+可用模型取决于您选择的 AI 服务提供商。如果使用 OpenRouter，可以在 [OpenRouter Models](https://openrouter.ai/models) 查看支持的模型列表。
+
+### 国际化配置
+
+本项目支持中文和英文两种语言。语言配置文件位于 `src/i18n/locales/` 目录下。
+
+如需添加新语言：
+
+1. 在 `src/i18n/locales/` 目录下创建新的语言文件，例如 `ja-JP.js`
+2. 在 `src/i18n/config.js` 中更新 `locales` 数组和 `getLanguageName` 函数
+3. 在 `src/i18n/index.js` 中导入新的语言文件并更新 `translations` 对象
+
+```javascript
+// 导入新语言文件
+import jaJP from './locales/ja-JP';
+
+// 更新语言映射
+const translations = {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+  'ja-JP': jaJP,
+};
+```
+
+### 应用程序配置
+
+除了 AI 相关的环境变量外，您还可以设置以下环境变量来配置应用程序：
+
+```
+# 应用程序设置
+NEXT_PUBLIC_APP_NAME=Markdown Beautifier  # 应用名称
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # 应用 URL
+NEXT_PUBLIC_ENABLE_ANALYTICS=false  # 是否启用分析功能
+NEXT_PUBLIC_MAX_CONTENT_LENGTH=50000  # 最大内容长度限制（字符数）
+```
+
+## 🧑‍💻 开发
+
+### 目录结构
+
+```
+markdown-beautifier/
+├── public/            # 静态资源
+├── src/               # 源代码
+│   ├── app/           # Next.js App Router
+│   ├── components/    # React 组件
+│   ├── i18n/          # 国际化配置
+│   │   └── locales/   # 语言文件
+│   ├── utils/         # 工具函数
+│   │   └── aiService.js  # AI 服务模块
+│   └── styles/        # 样式文件
+├── .env.example       # 环境变量示例
+├── next.config.mjs    # Next.js 配置
+└── package.json       # 项目依赖
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+# 或
+yarn build
+# 或
+pnpm build
+```
+
+### 启动生产服务器
+
+```bash
+npm start
+# 或
+yarn start
+# 或
+pnpm start
+```
+
+## 📝 贡献指南
+
+欢迎贡献代码、提交 issue 或提供改进建议！
+
+1. Fork 仓库
+2. 创建新分支：`git checkout -b feature/amazing-feature`
+3. 提交更改：`git commit -m 'Add amazing feature'`
+4. 推送到分支：`git push origin feature/amazing-feature`
+5. 提交 Pull Request
+
+## 📄 许可证
+
+本项目采用 [MIT 许可证](LICENSE)。
+
+## 🙏 鸣谢
+
+- [Next.js 团队](https://nextjs.org/)
+- [Material UI 团队](https://mui.com/)
+- [OpenRouter](https://openrouter.ai/)
+- 所有贡献者
+
+---
+
+<p align="center">使用 ❤️ 制作</p>

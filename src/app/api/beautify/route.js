@@ -1,5 +1,5 @@
 // edit_file: src/app/api/beautify/route.js
-// instructions: 我将添加一个新的LangGraph节点`generateDocumentOutline`用于生成文档大纲，并更新工作流和API响应以包含大纲。
+// instructions: 我将创建一个通用的LLM服务函数并重构代码，以便统一配置和调用AI模型，同时支持通过环境变量配置模型参数
 import { StateGraph, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
@@ -16,6 +16,135 @@ import { analyzeParagraphStructureSystemPrompt } from '../../../prompts/analyzeP
 import { generateDocumentOutlineSystemPrompt } from '../../../prompts/generateDocumentOutlinePrompt.js';
 import { beautifyHtmlLlmAdditionalInstructions } from '../../../prompts/beautifyHtmlLlmInstructions.js';
 
+// --- LLM 服务配置和工具函数 ---
+
+/**
+ * LLM服务配置 - 从环境变量中读取
+ */
+const LLM_CONFIG = {
+	// API相关配置
+	apiKey: process.env.AI_API_KEY || '',
+	baseURL: process.env.AI_BASE_URL || "https://openrouter.ai/api/v1",
+
+	// 模型相关配置
+	defaultModel: process.env.AI_DEFAULT_MODEL || "anthropic/claude-3.7-sonnet",
+	fallbackModel: process.env.AI_FALLBACK_MODEL || process.env.AI_DEFAULT_MODEL || "anthropic/claude-3-haiku",
+	outlineModel: process.env.AI_OUTLINE_MODEL || process.env.AI_DEFAULT_MODEL || "anthropic/claude-3.7-sonnet",
+
+	// 生成参数
+	defaultTemperature: parseFloat(process.env.AI_DEFAULT_TEMPERATURE || "0.1"),
+	outlineTemperature: parseFloat(process.env.AI_OUTLINE_TEMPERATURE || process.env.AI_DEFAULT_TEMPERATURE || "0.0"),
+
+	// 应用信息
+	appName: process.env.NEXT_PUBLIC_APP_NAME || "Markdown Beautifier",
+	appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+};
+
+/**
+ * 创建LLM实例
+ * @param {Object} options - 配置选项
+ * @returns {ChatOpenAI} LLM实例
+ */
+function createLlmInstance(options = {}) {
+	const {
+		modelName = LLM_CONFIG.defaultModel,
+		temperature = LLM_CONFIG.defaultTemperature,
+		customApiKey,
+		customBaseURL
+	} = options;
+
+	const apiKey = customApiKey || LLM_CONFIG.apiKey;
+
+	if (!apiKey) {
+		throw new Error("API Key is required but not provided");
+	}
+
+	return new ChatOpenAI({
+		modelName,
+		temperature,
+		apiKey,
+		configuration: {
+			baseURL: customBaseURL || LLM_CONFIG.baseURL,
+			defaultHeaders: {
+				"HTTP-Referer": LLM_CONFIG.appUrl,
+				"X-Title": LLM_CONFIG.appName,
+			},
+		},
+	});
+}
+
+/**
+ * 调用LLM服务 - 包装异常处理和结果清理
+ * @param {Object} params - 调用参数
+ * @returns {Promise<Object>} 结果和可能的错误
+ */
+async function invokeLlm(params) {
+	const {
+		systemPrompt,
+		humanPrompt,
+		modelOptions = {},
+		parseOptions = {
+			type: 'text', // 'text', 'json', 'html'
+			trimCodeBlocks: true,
+		}
+	} = params;
+
+	try {
+		const llm = createLlmInstance(modelOptions);
+
+		const messages = [];
+		if (systemPrompt) {
+			messages.push(new SystemMessage(systemPrompt));
+		}
+
+		messages.push(new HumanMessage(humanPrompt));
+
+		const response = await llm.invoke(messages);
+		let content = response.content;
+
+		// 处理代码块
+		if (parseOptions.trimCodeBlocks) {
+			// 根据不同的类型匹配不同的代码块
+			const blockType = parseOptions.type === 'json' ? 'json' :
+				parseOptions.type === 'html' ? 'html' : '';
+
+			const regex = blockType ?
+				new RegExp(`^(\`\`\`${blockType}\\s*)|(\\s*\`\`\`)$`, 'g') :
+				/^```\w*\s*|\s*```$/g;
+
+			content = content.trim().replace(regex, '').trim();
+		}
+
+		// 解析JSON
+		if (parseOptions.type === 'json' && content) {
+			try {
+				const jsonData = JSON.parse(content);
+				return { success: true, data: jsonData };
+			} catch (parseError) {
+				console.error("Error parsing JSON response:", parseError);
+				console.error("Raw content:", content);
+				return {
+					success: false,
+					error: "JSON解析失败",
+					rawContent: content
+				};
+			}
+		}
+
+		return { success: true, data: content };
+	} catch (error) {
+		console.error("LLM调用错误:", error);
+		let errorMessage = "LLM调用失败";
+
+		if (error.response) {
+			errorMessage += ` 状态: ${error.response.status}. 数据: ${JSON.stringify(error.response.data)}`;
+		} else if (error.message) {
+			errorMessage += ` 消息: ${error.message}`;
+		}
+
+		return { success: false, error: errorMessage };
+	}
+}
 
 // --- Helper Functions ---
 
@@ -92,79 +221,57 @@ async function analyzeParagraphStructure(state) {
 		return { error: "Cannot analyze: No HTML content available." };
 	}
 
-	const apiKey = process.env.OPENROUTER_API_KEY;
-	if (!apiKey) {
-		console.warn("API Warning: OPENROUTER_API_KEY is not set. Skipping paragraph structure analysis.");
+	if (!LLM_CONFIG.apiKey) {
+		console.warn("API Warning: No API Key is set. Skipping paragraph structure analysis.");
 		// 如果没有API Key，无法调用LLM分析，但仍需确保有基础结构，至少返回输入
-		// 这里可以考虑一个非LLM的简单逻辑，比如给所有顶级块元素包裹<p class="paragraph-component">
-		// 但为了简化，我们暂时直接返回 basicHtml
 		return { paragraphHtml: state.basicHtml };
 	}
 
-	try {
-		const llm = new ChatOpenAI({
-			modelName: "anthropic/claude-3.7-sonnet",
-			temperature: 0.1,
-			apiKey: apiKey,
-			configuration: {
-				baseURL: "https://openrouter.ai/api/v1",
-				defaultHeaders: {
-					"HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-					"X-Title": process.env.NEXT_PUBLIC_APP_NAME || "Markdown Beautifier",
-				},
-			},
-		});
-
-		// 使用导入的 System Prompt
-		const systemPrompt = analyzeParagraphStructureSystemPrompt;
-
-		const response = await llm.invoke([
-			new SystemMessage(systemPrompt),
-			new HumanMessage(`这是需要分析并添加段落结构和ID的HTML内容:
+	const result = await invokeLlm({
+		systemPrompt: analyzeParagraphStructureSystemPrompt,
+		humanPrompt: `这是需要分析并添加段落结构和ID的HTML内容:
 \`\`\`html
 ${state.basicHtml}
 \`\`\`
 
-请严格按照指示处理，确保所有内容块都有 \`paragraph-component\` 类和唯一的 \`id\`。`)
-		]);
+请严格按照指示处理，确保所有内容块都有 \`paragraph-component\` 类和唯一的 \`id\`。`,
+		parseOptions: { type: 'html', trimCodeBlocks: true },
+	});
 
-		// 清理LLM可能添加的额外标记
-		const paragraphHtml = response.content.replace(/^```html\s*|\s*```$/g, '').trim();
+	if (!result.success) {
+		console.warn("API: LLM failed to analyze paragraph structure, using original HTML with basic classes.");
+		return { paragraphHtml: state.basicHtml };
+	}
 
-		if (!paragraphHtml) {
-			console.warn("API: LLM failed to analyze paragraph structure, using original HTML with basic classes.");
-			// Fallback: use the basic HTML which might have some classes already
-			return { paragraphHtml: state.basicHtml };
-		}
+	const paragraphHtml = result.data;
 
-		// 尝试用 JSDOM 验证并添加 ID (作为LLM输出的补充)
-		// 这部分逻辑可以根据 LLM 的可靠性调整或移除
-		try {
-			const dom = new JSDOM(`<body>${paragraphHtml}</body>`);
-			const doc = dom.window.document;
-			const bodyElements = doc.body.children;
-			let idCounter = 1;
-			Array.from(bodyElements).forEach((el) => {
-				if (!el.id) {
-					el.id = `component-${idCounter++}`;
-				}
-				// 确保 paragraph-component 类存在
-				if (!el.classList.contains('paragraph-component')) {
-					console.warn(`Element ${el.tagName}#${el.id} missing paragraph-component class after LLM analysis. Adding it.`);
-					el.classList.add('paragraph-component');
-				}
-			});
-			const verifiedHtml = doc.body.innerHTML;
-			console.log("--- API: Verified Paragraph HTML Structure ---");
-			return { paragraphHtml: verifiedHtml };
-		} catch (domError) {
-			console.error("API Error verifying/cleaning paragraph HTML with JSDOM:", domError);
-			return { paragraphHtml: paragraphHtml }; // Use LLM output directly if JSDOM fails
-		}
+	if (!paragraphHtml) {
+		console.warn("API: LLM returned empty content for paragraph analysis. Using basic HTML.");
+		return { paragraphHtml: state.basicHtml };
+	}
 
-	} catch (error) {
-		console.error("API Error analyzing paragraph structure with LLM:", error);
-		return { paragraphHtml: state.basicHtml }; // Fallback to basic HTML on error
+	// 尝试用 JSDOM 验证并添加 ID (作为LLM输出的补充)
+	try {
+		const dom = new JSDOM(`<body>${paragraphHtml}</body>`);
+		const doc = dom.window.document;
+		const bodyElements = doc.body.children;
+		let idCounter = 1;
+		Array.from(bodyElements).forEach((el) => {
+			if (!el.id) {
+				el.id = `component-${idCounter++}`;
+			}
+			// 确保 paragraph-component 类存在
+			if (!el.classList.contains('paragraph-component')) {
+				console.warn(`Element ${el.tagName}#${el.id} missing paragraph-component class after LLM analysis. Adding it.`);
+				el.classList.add('paragraph-component');
+			}
+		});
+		const verifiedHtml = doc.body.innerHTML;
+		console.log("--- API: Verified Paragraph HTML Structure ---");
+		return { paragraphHtml: verifiedHtml };
+	} catch (domError) {
+		console.error("API Error verifying/cleaning paragraph HTML with JSDOM:", domError);
+		return { paragraphHtml: paragraphHtml }; // Use LLM output directly if JSDOM fails
 	}
 }
 
@@ -177,72 +284,40 @@ async function generateDocumentOutline(state) {
 		return { error: "Cannot generate outline: No paragraph HTML available." };
 	}
 
-	const apiKey = process.env.OPENROUTER_API_KEY;
 	// 如果没有API Key，我们无法生成大纲，可以选择返回空大纲或错误
-	if (!apiKey) {
-		console.warn("API Warning: OPENROUTER_API_KEY is not set. Skipping outline generation.");
+	if (!LLM_CONFIG.apiKey) {
+		console.warn("API Warning: No API Key is set. Skipping outline generation.");
 		return { documentOutline: [] }; // 返回空数组表示没有大纲
 	}
 
-	try {
-		const llm = new ChatOpenAI({
-			modelName: "anthropic/claude-3.7-sonnet", // 或者选择更快的模型如 Haiku
-			temperature: 0.0, // 低温以获得结构化输出
-			apiKey: apiKey,
-			configuration: {
-				baseURL: "https://openrouter.ai/api/v1",
-				defaultHeaders: {
-					"HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-					"X-Title": process.env.NEXT_PUBLIC_APP_NAME || "Markdown Beautifier",
-				},
-			},
-			// 请求 JSON 输出 (适用于支持 JSON 模式的模型)
-			// 注意：并非所有模型都可靠地支持此功能，需要测试
-			// modelKwargs: { response_format: { type: "json_object" } },
-		});
-
-		// 使用导入的 System Prompt
-		const systemPrompt = generateDocumentOutlineSystemPrompt;
-
-		const response = await llm.invoke([
-			new SystemMessage(systemPrompt),
-			new HumanMessage(`请根据以下HTML内容生成文档大纲JSON:
-		\`\`\`html
+	const result = await invokeLlm({
+		systemPrompt: generateDocumentOutlineSystemPrompt,
+		humanPrompt: `请根据以下HTML内容生成文档大纲JSON:
+\`\`\`html
 ${state.paragraphHtml}
 \`\`\`
-请确保输出是严格符合要求的JSON数组。`)
-		]);
+请确保输出是严格符合要求的JSON数组。`,
+		modelOptions: {
+			modelName: LLM_CONFIG.outlineModel,
+			temperature: LLM_CONFIG.outlineTemperature
+		},
+		parseOptions: { type: 'json', trimCodeBlocks: true },
+	});
 
-		let outlineJson = [];
-		try {
-			// 尝试解析LLM返回的JSON
-			const responseContent = response.content.replace(/^```json\s*|\s*```$/g, '').trim();
-			if (responseContent) {
-				outlineJson = JSON.parse(responseContent);
-				// 基本验证，确保它是一个数组
-				if (!Array.isArray(outlineJson)) {
-					console.warn("API: LLM did not return a valid JSON array for outline. Returning empty outline.");
-					outlineJson = [];
-				} else {
-					console.log("--- API: Successfully generated document outline ---");
-				}
-			} else {
-				console.warn("API: LLM returned empty content for outline. Returning empty outline.");
-			}
-		} catch (parseError) {
-			console.error("API Error parsing LLM response for outline:", parseError);
-			console.error("LLM Outline Response Content:", response.content); // Log the problematic response
-			// 解析失败，返回空大纲
-			outlineJson = [];
-		}
-
-		return { documentOutline: outlineJson };
-
-	} catch (error) {
-		console.error("API Error generating document outline with LLM:", error);
-		// LLM 调用失败，返回空大纲
+	if (!result.success) {
+		console.warn("API: Failed to generate document outline:", result.error);
 		return { documentOutline: [] };
 	}
+
+	// 如果成功解析了JSON，但需确保它是数组
+	const outlineJson = result.data;
+	if (!Array.isArray(outlineJson)) {
+		console.warn("API: LLM did not return a valid JSON array for outline. Returning empty outline.");
+		return { documentOutline: [] };
+	}
+
+	console.log("--- API: Successfully generated document outline ---");
+	return { documentOutline: outlineJson };
 }
 
 
@@ -267,56 +342,39 @@ async function beautifyHtmlWithLlm(state) {
 		return { styledHtml: state.paragraphHtml };
 	}
 
-	const apiKey = process.env.OPENROUTER_API_KEY;
-	if (!apiKey) {
-		console.error("API Error: OPENROUTER_API_KEY is not set.");
+	if (!LLM_CONFIG.apiKey) {
+		console.error("API Error: No API Key is set.");
 		// 如果没有key，无法美化，返回段落化的HTML
 		return { styledHtml: state.paragraphHtml, error: "Server configuration error: Missing API Key for beautification. Returning unstyled HTML." };
 	}
 
-	try {
-		const llm = new ChatOpenAI({
-			modelName: "anthropic/claude-3.7-sonnet",
-			temperature: 0.1,
-			apiKey: apiKey,
-			configuration: {
-				baseURL: "https://openrouter.ai/api/v1",
-				defaultHeaders: {
-					"HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-					"X-Title": process.env.NEXT_PUBLIC_APP_NAME || "Markdown Beautifier",
-				},
-			},
-		});
+	// 使用导入的附加指令
+	const additionalInstructions = beautifyHtmlLlmAdditionalInstructions;
+	let userPromptWithInstructions = state.userPrompt + "\n" + additionalInstructions;
+	// 使用 paragraphHtml 作为输入进行美化
+	const systemPrompt = beautifySystemPromptGenerate(userPromptWithInstructions || '默认风格', state.paragraphHtml);
 
-		// 使用导入的附加指令
-		const additionalInstructions = beautifyHtmlLlmAdditionalInstructions;
+	const result = await invokeLlm({
+		humanPrompt: systemPrompt,
+		parseOptions: { type: 'html', trimCodeBlocks: true },
+	});
 
-		let userPromptWithInstructions = state.userPrompt + "\n" + additionalInstructions;
-		// 使用 paragraphHtml 作为输入进行美化
-		const systemPrompt = beautifySystemPromptGenerate(userPromptWithInstructions || '默认风格', state.paragraphHtml);
-
-		const response = await llm.invoke([new HumanMessage(systemPrompt)]);
-		const styledContent = response.content;
-		const cleanedHtml = styledContent.trim().replace(/^```html\s*|\s*```$/g, '').trim();
-
-		if (!cleanedHtml) {
-			console.warn("API: LLM returned empty content after beautification. Using paragraph HTML.");
-			return { styledHtml: state.paragraphHtml }; // Fallback
-		}
-		console.log("--- API: Successfully beautified HTML ---");
-		return { styledHtml: cleanedHtml };
-
-	} catch (error) {
-		console.error("API Error calling LLM for beautification:", error);
-		let errorMessage = `LLM beautification failed.`;
-		if (error.response) {
-			errorMessage += ` Status: ${error.response.status}. Data: ${JSON.stringify(error.response.data)}`;
-		} else if (error.message) {
-			errorMessage += ` Message: ${error.message}`;
-		}
-		// 即使美化失败，也尝试返回段落化的 HTML
-		return { styledHtml: state.paragraphHtml, error: errorMessage };
+	if (!result.success) {
+		console.error("API Error calling LLM for beautification:", result.error);
+		return {
+			styledHtml: state.paragraphHtml,
+			error: `LLM beautification failed. ${result.error}`
+		};
 	}
+
+	const cleanedHtml = result.data;
+	if (!cleanedHtml) {
+		console.warn("API: LLM returned empty content after beautification. Using paragraph HTML.");
+		return { styledHtml: state.paragraphHtml }; // Fallback
+	}
+
+	console.log("--- API: Successfully beautified HTML ---");
+	return { styledHtml: cleanedHtml };
 }
 
 // Node 5: Finalize HTML Document (原Node 4)
@@ -459,8 +517,8 @@ export async function POST(request) {
 			return NextResponse.json({ error: 'Markdown content is required.' }, { status: 400 });
 		}
 
-		if (!process.env.OPENROUTER_API_KEY) {
-			console.error("FATAL: OPENROUTER_API_KEY environment variable is not set.");
+		if (!LLM_CONFIG.apiKey) {
+			console.error("FATAL: No API Key is set in environment variables.");
 			return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
 		}
 
