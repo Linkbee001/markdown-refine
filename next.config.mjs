@@ -1,6 +1,13 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin(
+	// 指定 request.ts 的路径
+	'./src/i18n/request.ts'
+);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	// 移除了i18n配置，因为在App Router中不支持此配置方式
+	// 其他 Next.js 配置...
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

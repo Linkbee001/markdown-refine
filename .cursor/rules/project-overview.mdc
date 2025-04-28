@@ -1,0 +1,64 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 项目概览：Markdown 美化器 (Markdown Beautifier)
+
+## 核心功能
+
+本项目是一个 AI 驱动的 Markdown 美化工具，旨在帮助用户优化 Markdown 文档的格式和样式，生成专业美观的 HTML 输出，并提供文档结构大纲。
+
+主要功能点包括：
+- **AI 美化**: 利用大型语言模型 (LLM) 根据用户提供的样式提示（**可选择先进行 AI 润色和扩写**）美化 Markdown 内容。
+- **文档大纲生成**: 自动分析文档结构并生成可交互的大纲。
+- **HTML 导出**: 主要输出格式为带有内联样式的 HTML。
+- **国际化**: 支持多语言界面 (中文、英文)。
+
+## 技术栈与实现关键点
+
+### 技术栈
+- **前端**: Next.js (App Router), React, Material UI (MUI)
+- **后端**: Next.js API Routes
+- **AI/LLM**: LangChain.js (@langchain/langgraph, @langchain/openai), 支持 OpenRouter, OpenAI, Anthropic 等提供商。
+- **Markdown 解析**: `marked` 库。
+- **服务器端 DOM 操作**: `jsdom` 库。
+- **配置**: 使用 `.env.local` 文件管理 API 密钥、模型名称、基础 URL 等敏感信息和环境配置。
+
+### 实现细节
+
+#### 后端 API (`/api/beautify` - `src/app/api/beautify/route.js`)
+
+后端是核心处理逻辑所在，通过一个 POST API 端点接收 Markdown 内容和用户样式提示 (prompt)，并利用 LangGraph 构建了一个多步骤的 AI 处理流水线：
+
+1.  **`parse_markdown`**: 使用 `marked` 将传入的 Markdown 转换为基础 HTML。使用 `jsdom` 进行初步的 HTML 清理和基础结构标记 (添加 CSS 类和 ID)。
+2.  **`analyze_paragraphs`**: 调用 LLM (通过 `invokeLlm` 封装) 分析 HTML 内容，识别段落、标题等结构，并添加特定的 CSS 类 (`paragraph-component`) 和唯一的 ID。此步骤依赖 `analyzeParagraphStructureSystemPrompt`。
+3.  **`generate_outline`**: 调用 LLM (使用特定模型如 `AI_OUTLINE_MODEL` 和低 `temperature`)，根据上一步带有结构标记的 HTML 生成 JSON 格式的文档大纲。此步骤依赖 `generateDocumentOutlineSystemPrompt`。
+4.  **`refine_user_prompt` (新增)**: 调用 LLM (如果用户提供了 prompt 且配置了 API Key)，根据 `refineUserPromptSystemPrompt` 的指示，对用户原始的样式提示进行理解、丰富和扩写，生成一个更详细的 `refinedUserPrompt`。
+5.  **`beautify_html`**: 核心美化步骤。调用 LLM，结合**经过润色的提示词 (`refinedUserPrompt`，如果可用) 或原始用户提示 (`userPrompt`)**，以及预设的 `beautifyHtmlLlmAdditionalInstructions`，指示 LLM 修改 HTML，主要是通过添加内联样式 (`style="..."`) 来实现视觉美化。此步骤依赖 `beautifySystemPromptGenerate` 函数，该函数会**动态加载 `src/prompts/templates/basic/` 目录下的 `.md` 文件**作为详细的组件样式指令，并结合（润色后的）用户提示生成最终的系统提示。
+6.  **`finalize_html`**: 将经过美化的 HTML 内容 (`styledHtml`) 包装在一个完整的 HTML 骨架中，包含基础的 CSS 样式，形成最终可供前端渲染的 `finalHtml`。
+
+**关键辅助函数/概念**:
+- `LLM_CONFIG`: 从环境变量读取所有 AI 相关配置。
+- `createLlmInstance`: 根据配置创建 `ChatOpenAI` 实例。
+- `invokeLlm`: 封装了 LLM 调用逻辑，包括构建消息、发送请求、清理响应 (去除代码块标记、解析 JSON) 和错误处理。
+- **Prompts**: 复杂的 LLM 指令被分离到 `src/prompts/` 目录下的独立文件中：
+    - **核心系统提示**: 如 `analyzeParagraphStructurePrompt.js`, `generateDocumentOutlinePrompt.js`, `refineUserPrompt.js`。
+    - **美化主框架**: `beautifySystemPrompt.js` (负责加载模板并组合)。
+    - **组件样式模板**: `src/prompts/templates/basic/*.md` (包含各 HTML 元素的具体样式要求)。
+    - **附加指令**: `beautifyHtmlLlmInstructions.js` (提供给美化 LLM 的额外通用规则)。
+
+#### 前端 (推测)
+
+根据项目结构和后端 API 的响应，前端主要负责：
+- 提供用户界面 (使用 React 和 Material UI)，包括 Markdown 编辑器、样式提示输入框、预览区域和大纲显示区域。
+- 将用户输入打包发送到 `/api/beautify` 端点。
+- 接收后端返回的 `finalHtml` 和 `documentOutline` 数据。
+- 将 `finalHtml` 渲染到预览区域（可能通过 `dangerouslySetInnerHTML` 或 iframe）。
+- 基于 `documentOutline` 数据渲染可交互的文档大纲。
+
+#### 国际化 (`src/i18n`)
+
+- 语言文件位于 `src/i18n/locales/`。
+
+- 配置文件 (`config.js`, `index.js`) 用于管理支持的语言和加载翻译。 

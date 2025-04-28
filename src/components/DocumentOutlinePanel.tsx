@@ -21,6 +21,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import InboxIcon from "@mui/icons-material/MoveToInbox";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import { useTranslations } from "next-intl";
 
 // 定义大纲项目的接口
 export interface OutlineItem {
@@ -67,34 +68,6 @@ const getIconForType = (type: string) => {
   }
 };
 
-// 为类型返回中文名称
-const getTypeName = (type: string) => {
-  switch (type) {
-    case "heading":
-      return "标题";
-    case "paragraph":
-      return "段落";
-    case "list":
-      return "列表";
-    case "code":
-      return "代码块";
-    case "quote":
-      return "引用";
-    case "date":
-      return "日期";
-    case "ending":
-      return "结束标记";
-    case "paragraph-wrapper":
-      return "段落容器";
-    case "image-wrapper":
-      return "图片容器";
-    case "image":
-      return "图片";
-    default:
-      return "其他";
-  }
-};
-
 // 递归渲染列表项的组件
 interface OutlineListItemProps {
   item: OutlineItem;
@@ -110,6 +83,7 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
   level,
 }) => {
   const [open, setOpen] = React.useState(true);
+  const t = useTranslations("documentOutlinePanel.types");
 
   const hasChildren = item.children && item.children.length > 0;
 
@@ -117,6 +91,17 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
     onSelectItem(item.id);
     if (hasChildren) {
       setOpen(!open);
+    }
+  };
+
+  const typeTranslationKey = (type: string): string => {
+    switch (type) {
+      case "paragraph-wrapper":
+        return "paragraphWrapper";
+      case "image-wrapper":
+        return "imageWrapper";
+      default:
+        return type;
     }
   };
 
@@ -144,7 +129,7 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
             primary={
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="body1" sx={{ mr: 1 }}>
-                  {getTypeName(item.type)}
+                  {t(typeTranslationKey(item.type))}
                 </Typography>
                 {item.specialComponents.length > 0 && (
                   <Badge
@@ -192,6 +177,8 @@ const DocumentOutlinePanel: React.FC<DocumentOutlinePanelProps> = ({
   selectedId,
   onSelectItem,
 }) => {
+  const t = useTranslations("documentOutlinePanel");
+
   return (
     <Box
       sx={{
@@ -214,7 +201,7 @@ const DocumentOutlinePanel: React.FC<DocumentOutlinePanelProps> = ({
           flexShrink: 0,
         }}
       >
-        文档大纲
+        {t("title")}
       </Typography>
       <Divider />
       <Box sx={{ flexGrow: 1, overflowY: "auto", width: "100%" }}>

@@ -1,13 +1,18 @@
 import React from 'react';
 import { Box, Select, MenuItem } from '@mui/material';
-import { useTranslation } from '../i18n';
-import { getLanguageName } from '../i18n/config';
+import { useLocale, useTranslations } from 'next-intl';
+import { locales, getLanguageName } from '../i18n/config';
 
 const LanguageSwitcher = ({ sx = {} }) => {
-	const { locale, locales, changeLocale } = useTranslation();
+	const locale = useLocale();
+	const t = useTranslations('common');
 
 	const handleChange = (event) => {
-		changeLocale(event.target.value);
+		const newLocale = event.target.value;
+		// 设置 cookie，有效期一年
+		document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+		// 刷新页面以应用新语言
+		window.location.reload();
 	};
 
 	return (

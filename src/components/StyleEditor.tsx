@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { SketchPicker } from "react-color";
+import { useTranslations } from "next-intl";
 
 // 定义样式属性接口
 interface StyleProperties {
@@ -53,6 +54,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
   initialStyles,
   onApplyStyles,
 }) => {
+  const t = useTranslations("styleEditor");
   const [styles, setStyles] = useState<Partial<StyleProperties>>(initialStyles);
   const [currentTab, setCurrentTab] = useState(0);
   const [colorPickerOpen, setColorPickerOpen] = useState<string | null>(null);
@@ -65,9 +67,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
   if (!elementId) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="body1">
-          请从大纲中选择一个组件来编辑样式
-        </Typography>
+        <Typography variant="body1">{t("selectComponentPrompt")}</Typography>
       </Box>
     );
   }
@@ -112,9 +112,9 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         onChange={handleTabChange}
         sx={{ mb: 2, flexShrink: 0 }}
       >
-        <Tab label="外观" />
-        <Tab label="排版" />
-        <Tab label="间距" />
+        <Tab label={t("tabs.appearance")} />
+        <Tab label={t("tabs.typography")} />
+        <Tab label={t("tabs.spacing")} />
       </Tabs>
 
       <Box sx={{ flexGrow: 1, flexShrink: 1, overflowY: "auto" }}>
@@ -122,14 +122,14 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
           <Box sx={{ p: 1 }}>
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>颜色</Typography>
+                <Typography>{t("sections.colors.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" sx={{ minWidth: 100 }}>
-                        背景颜色:
+                        {t("sections.colors.backgroundLabel")}
                       </Typography>
                       <Box
                         sx={{
@@ -169,7 +169,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" sx={{ minWidth: 100 }}>
-                        文字颜色:
+                        {t("sections.colors.textLabel")}
                       </Typography>
                       <Box
                         sx={{
@@ -211,14 +211,14 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>边框</Typography>
+                <Typography>{t("sections.border.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" sx={{ minWidth: 100 }}>
-                        边框颜色:
+                        {t("sections.border.colorLabel")}
                       </Typography>
                       <Box
                         sx={{
@@ -257,7 +257,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
 
                   <Grid item xs={12}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      边框宽度:
+                      {t("sections.border.widthLabel")}
                     </Typography>
                     <TextField
                       fullWidth
@@ -266,13 +266,13 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       onChange={(e) =>
                         handleStyleChange("borderWidth", e.target.value)
                       }
-                      placeholder="例如: 1px"
+                      placeholder={t("sections.border.widthPlaceholder")}
                     />
                   </Grid>
 
                   <Grid item xs={12}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      边框圆角:
+                      {t("sections.border.radiusLabel")}
                     </Typography>
                     <TextField
                       fullWidth
@@ -281,7 +281,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       onChange={(e) =>
                         handleStyleChange("borderRadius", e.target.value)
                       }
-                      placeholder="例如: 4px 或 50%"
+                      placeholder={t("sections.border.radiusPlaceholder")}
                     />
                   </Grid>
                 </Grid>
@@ -293,13 +293,13 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
           <Box sx={{ p: 1 }}>
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>字体</Typography>
+                <Typography>{t("sections.font.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      字号:
+                      {t("sections.font.sizeLabel")}
                     </Typography>
                     <TextField
                       fullWidth
@@ -308,27 +308,37 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                       onChange={(e) =>
                         handleStyleChange("fontSize", e.target.value)
                       }
-                      placeholder="例如: 16px 或 1rem"
+                      placeholder={t("sections.font.sizePlaceholder")}
                     />
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      字重:
+                      {t("sections.font.weightLabel")}
                     </Typography>
                     <FormControl fullWidth size="small">
-                      <InputLabel>选择字重</InputLabel>
+                      <InputLabel>{t("sections.font.selectWeight")}</InputLabel>
                       <Select
                         value={styles.fontWeight || ""}
-                        label="选择字重"
+                        label={t("sections.font.selectWeight")}
                         onChange={(e) =>
                           handleStyleChange("fontWeight", e.target.value)
                         }
                       >
-                        <MenuItem value="">默认</MenuItem>
-                        <MenuItem value="normal">Normal (400)</MenuItem>
-                        <MenuItem value="bold">Bold (700)</MenuItem>
-                        <MenuItem value="lighter">Lighter (300)</MenuItem>
-                        <MenuItem value="bolder">Bolder (900)</MenuItem>
+                        <MenuItem value="">
+                          {t("sections.font.weightDefault")}
+                        </MenuItem>
+                        <MenuItem value="normal">
+                          {t("sections.font.weightNormal")}
+                        </MenuItem>
+                        <MenuItem value="bold">
+                          {t("sections.font.weightBold")}
+                        </MenuItem>
+                        <MenuItem value="lighter">
+                          {t("sections.font.weightLighter")}
+                        </MenuItem>
+                        <MenuItem value="bolder">
+                          {t("sections.font.weightBolder")}
+                        </MenuItem>
                         <MenuItem value="100">100</MenuItem>
                         <MenuItem value="200">200</MenuItem>
                         <MenuItem value="300">300</MenuItem>
@@ -350,12 +360,12 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
           <Box sx={{ p: 1 }}>
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>布局 (Flexbox)</Typography>
+                <Typography>{t("sections.flexbox.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Flex Direction:
+                    {t("sections.flexbox.directionLabel")}
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
@@ -364,17 +374,27 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                         handleStyleChange("flexDirection", e.target.value)
                       }
                     >
-                      <MenuItem value="">默认</MenuItem>
-                      <MenuItem value="row">row</MenuItem>
-                      <MenuItem value="row-reverse">row-reverse</MenuItem>
-                      <MenuItem value="column">column</MenuItem>
-                      <MenuItem value="column-reverse">column-reverse</MenuItem>
+                      <MenuItem value="">
+                        {t("sections.flexbox.defaultOption")}
+                      </MenuItem>
+                      <MenuItem value="row">
+                        {t("sections.flexbox.directionRow")}
+                      </MenuItem>
+                      <MenuItem value="row-reverse">
+                        {t("sections.flexbox.directionRowReverse")}
+                      </MenuItem>
+                      <MenuItem value="column">
+                        {t("sections.flexbox.directionColumn")}
+                      </MenuItem>
+                      <MenuItem value="column-reverse">
+                        {t("sections.flexbox.directionColumnReverse")}
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Justify Content:
+                    {t("sections.flexbox.justifyContentLabel")}
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
@@ -383,19 +403,33 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                         handleStyleChange("justifyContent", e.target.value)
                       }
                     >
-                      <MenuItem value="">默认</MenuItem>
-                      <MenuItem value="flex-start">flex-start</MenuItem>
-                      <MenuItem value="flex-end">flex-end</MenuItem>
-                      <MenuItem value="center">center</MenuItem>
-                      <MenuItem value="space-between">space-between</MenuItem>
-                      <MenuItem value="space-around">space-around</MenuItem>
-                      <MenuItem value="space-evenly">space-evenly</MenuItem>
+                      <MenuItem value="">
+                        {t("sections.flexbox.defaultOption")}
+                      </MenuItem>
+                      <MenuItem value="flex-start">
+                        {t("sections.flexbox.justifyStart")}
+                      </MenuItem>
+                      <MenuItem value="flex-end">
+                        {t("sections.flexbox.justifyEnd")}
+                      </MenuItem>
+                      <MenuItem value="center">
+                        {t("sections.flexbox.justifyCenter")}
+                      </MenuItem>
+                      <MenuItem value="space-between">
+                        {t("sections.flexbox.justifyBetween")}
+                      </MenuItem>
+                      <MenuItem value="space-around">
+                        {t("sections.flexbox.justifyAround")}
+                      </MenuItem>
+                      <MenuItem value="space-evenly">
+                        {t("sections.flexbox.justifyEvenly")}
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Align Items:
+                    {t("sections.flexbox.alignItemsLabel")}
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
@@ -404,25 +438,37 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                         handleStyleChange("alignItems", e.target.value)
                       }
                     >
-                      <MenuItem value="">默认</MenuItem>
-                      <MenuItem value="stretch">stretch</MenuItem>
-                      <MenuItem value="flex-start">flex-start</MenuItem>
-                      <MenuItem value="flex-end">flex-end</MenuItem>
-                      <MenuItem value="center">center</MenuItem>
-                      <MenuItem value="baseline">baseline</MenuItem>
+                      <MenuItem value="">
+                        {t("sections.flexbox.defaultOption")}
+                      </MenuItem>
+                      <MenuItem value="stretch">
+                        {t("sections.flexbox.alignStretch")}
+                      </MenuItem>
+                      <MenuItem value="flex-start">
+                        {t("sections.flexbox.alignStart")}
+                      </MenuItem>
+                      <MenuItem value="flex-end">
+                        {t("sections.flexbox.alignEnd")}
+                      </MenuItem>
+                      <MenuItem value="center">
+                        {t("sections.flexbox.alignCenter")}
+                      </MenuItem>
+                      <MenuItem value="baseline">
+                        {t("sections.flexbox.alignBaseline")}
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Gap:
+                    {t("sections.flexbox.gapLabel")}
                   </Typography>
                   <TextField
                     fullWidth
                     size="small"
                     value={styles.gap || ""}
                     onChange={(e) => handleStyleChange("gap", e.target.value)}
-                    placeholder="例如: 10px 或 1rem"
+                    placeholder={t("sections.flexbox.gapPlaceholder")}
                   />
                 </Box>
               </AccordionDetails>
@@ -430,12 +476,12 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>Padding</Typography>
+                <Typography>{t("sections.padding.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Padding (所有):
+                    {t("sections.padding.allLabel")}
                   </Typography>
                   <TextField
                     fullWidth
@@ -444,7 +490,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                     onChange={(e) =>
                       handleStyleChange("padding", e.target.value)
                     }
-                    placeholder="例如: 10px 或 1rem"
+                    placeholder={t("sections.padding.placeholder")}
                   />
                 </Box>
               </AccordionDetails>
@@ -452,12 +498,12 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>Margin</Typography>
+                <Typography>{t("sections.margin.title")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Margin (所有):
+                    {t("sections.margin.allLabel")}
                   </Typography>
                   <TextField
                     fullWidth
@@ -466,7 +512,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
                     onChange={(e) =>
                       handleStyleChange("margin", e.target.value)
                     }
-                    placeholder="例如: 10px 或 1rem"
+                    placeholder={t("sections.margin.placeholder")}
                   />
                 </Box>
               </AccordionDetails>
@@ -483,9 +529,9 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
             right: 0,
             bottom: 0,
             left: 0,
-            zIndex: 1, // 确保在颜色选择器下方
+            zIndex: 1,
           }}
-          onClick={() => toggleColorPicker(null)} // 点击外部关闭
+          onClick={() => toggleColorPicker(null)}
         />
       )}
 
@@ -497,7 +543,7 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
           disabled={!elementId}
           fullWidth
         >
-          应用样式
+          {t("applyButton")}
         </Button>
       </Box>
     </Box>

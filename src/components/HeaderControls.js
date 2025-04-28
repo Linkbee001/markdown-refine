@@ -11,7 +11,7 @@ import {
 	MenuItem,
 	CircularProgress
 } from '@mui/material';
-import { useTranslation } from '../i18n';
+import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function HeaderControls({
@@ -23,7 +23,7 @@ export default function HeaderControls({
 	htmlResult,
 	onExport,
 }) {
-	const { t } = useTranslation();
+	const t = useTranslations();
 	const [exportAnchorEl, setExportAnchorEl] = useState(null);
 	const isExportMenuOpen = Boolean(exportAnchorEl);
 

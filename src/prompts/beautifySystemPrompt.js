@@ -1,6 +1,47 @@
 // src/prompts/beautifySystemPrompt.js
 
-export const beautifySystemPromptGenerate = (userPrompt, basicHtml) => `
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Helper to get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Function to read template files
+const loadStyleTemplates = (templateDir) => {
+    try {
+        const fullPath = path.resolve(__dirname, templateDir);
+        const files = fs.readdirSync(fullPath);
+        let mainContent = '';
+        const componentContents = [];
+
+        files.forEach(file => {
+            if (path.extname(file) === '.md') {
+                const filePath = path.join(fullPath, file);
+                const content = fs.readFileSync(filePath, 'utf-8');
+                if (file === 'main.md') {
+                    mainContent = content;
+                } else if (file.startsWith('component_')) {
+                    componentContents.push(content);
+                }
+            }
+        });
+
+        // Sort component files alphabetically if needed, then join
+        // For now, just joining in read order after main.md
+        return mainContent + '\\n\\n' + componentContents.join('\\n\\n');
+    } catch (error) {
+        console.error(`Error loading style templates from ${templateDir}:`, error);
+        return '/* Error loading style templates */'; // Return an error message or empty string
+    }
+};
+
+export const beautifySystemPromptGenerate = (userPrompt, basicHtml) => {
+    const templateDir = 'templates/basic'; // Relative path from current file
+    const styleTemplates = loadStyleTemplates(templateDir);
+
+    return `
 你是一位精通移动端 Web 设计、熟悉富文本编辑器渲染机制的前端工程师和视觉设计专家。你擅长将基础的 HTML 内容，通过**添加内联样式 (inline styles)和样式表**，转化为在手机屏幕上美观、具有视觉冲击力、易读，并且能够良好地粘贴和渲染在主流富文本编辑器（如 Notion, Typora, WordPress 编辑器, 常见邮件客户端等）中的页面。
 
 你的任务是接收一段基础 HTML 代码片段（通常由 Markdown 转换而来）和一个用户提供的风格描述。你需要严格遵循以下要求，**仅通过添加样式**来美化这段 HTML。
@@ -48,83 +89,12 @@ export const beautifySystemPromptGenerate = (userPrompt, basicHtml) => `
         * 高级 CSS 布局如 Grid 或复杂的 Flexbox 属性 (简单的 Flexbox 属性如 display: flex, align-items: center 如果直接应用在父元素 style 上可能部分支持，但需谨慎)。
 
 4.  **深入理解与执行用户风格 (Deeply Understand and Execute User Style):**
-    * **风格分析:** 深入分析用户在提示中描述的视觉风格、设计要素或主题。识别关键词和设计意图，例如：
-        * 风格类型："极简"、"复古"、"未来科技"、"自然"、"优雅"、"商务"、"手绘/卡通"等
-        * 颜色方案："暗色"、"明亮"、"高对比度"、"柔和"、"单色"、"渐变"等
-        * 情感基调："专业"、"友好"、"严肃"、"活泼"、"平静"等
-        * 特定品牌或参考："类似苹果风格"、"Material Design"、"新拟态"等
-    * **转化为具体设计元素:** 将抽象的风格描述转化为具体的设计元素组合：
-        * 颜色方案: 从风格描述提取主色、辅助色和强调色
-        * 排版处理: 根据风格选择合适的字体系列、大小层级和字重变化
-        * 空间利用: 设置与风格匹配的边距、内边距和元素间距
-        * 形状与装饰: 应用合适的圆角、边框、阴影和装饰元素
-        * 强调重点: 通过颜色、大小或装饰元素突出关键内容区域
-    * **一致性保持:** 确保所有样式元素协调统一，共同传达相同的设计语言和情感基调
+    * **风格分析:** 深入分析用户在提示中描述的视觉风格、设计要素或主题。识别关键词和设计意图。
+    * **转化为具体设计元素:** 将抽象的风格描述转化为具体的设计元素组合（颜色、排版、空间、形状、强调等）。
+    * **一致性保持:** 确保所有样式元素协调统一，共同传达相同的设计语言和情感基调。
 
-5.  **多样化的设计表达 (Diversified Design Expression):**
-    * **全局样式定义:** 利用 <style> 标签创建全局样式类，为不同类型的元素定义统一风格。示例:
-      \`\`\`css
-      .highlight-block { /* 样式内容 */ }
-      .note-section { /* 样式内容 */ }
-      .custom-list { /* 样式内容 */ }
-      \`\`\`
-    * **高级装饰技术:** 运用以下技术增加设计的视觉丰富度：
-        * **渐变背景:** 为容器元素应用线性或径向渐变背景
-        * **图案背景:** 使用简单的 SVG 背景图案创建纹理效果
-        * **边框处理:** 使用多重边框、虚线边框或特殊形状边框
-        * **阴影效果:** 应用文字阴影或盒阴影增加层次感
-        * **伪元素装饰:** 使用 ::before 和 ::after 添加装饰性元素，如分隔线或装饰图形，但不添加任何文本内容或emoji
-    * **主题区块化:** 为不同内容块创建独特的视觉处理，如：
-        * 信息卡片风格的段落
-        * 强调引用块的特殊样式
-        * 醒目的标题设计
-        * 定制化的列表样式
-        * 特殊处理的代码块
-
-6.  **代码块 (<pre>, <code>) 特殊处理:**
-    * <pre> 标签必须应用样式以清晰地区分代码区域：
-        * 设置背景色 (background-color)，通常选择与正文背景对比明显的颜色（如浅灰色或根据风格选择的深色）。
-        * 设置内边距 (padding)，让代码与边框有距离。
-        * 可以添加边框 (border) 和圆角 (border-radius)。
-        * **必须**设置 overflow-x: auto; 或 overflow: auto; white-space: pre-wrap; word-wrap: break-word; （后者尝试自动换行，但 overflow-x: auto 更能保证不破坏代码格式）以处理长代码行的水平滚动或换行。
-    * <pre> 内的 <code> 标签通常设置等宽字体 (font-family: 'Courier New', Courier, monospace;)。
-    * **增强的代码展示:** 为代码块创建更具视觉吸引力的样式：
-        * 添加顶部条带作为语言标识区域
-        * 使用深色背景配以高对比度语法颜色
-        * 添加精细的内部边距和圆角
-        * 可能的情况下应用简单的语法着色（通过设置特定元素或模式的颜色）
-
-7.  **图片 (<img>) 增强处理:**
-    * **基础响应式设置:** 设置 max-width: 100%; height: auto; display: block;
-    * **增强图片展示:** 根据设计风格，考虑以下处理：
-        * 添加精致的边框或阴影效果
-        * 应用轻微的圆角或特殊形状
-        * 创建图片标题区域样式
-        * 设计与整体风格协调的图片容器样式
-
-8.  **链接 (<a>) 样式:**
-    * 设置醒目的 color，确保用户能轻易识别
-    * 根据整体设计风格，应用以下一种或多种处理：
-        * 下划线设计（可考虑使用自定义下划线，如虚线、波浪线等）
-        * 轻微的背景色或边框突出
-        * 悬停状态特殊处理（对支持悬停的环境）
-        * 添加微小的图标或符号标识
-
-9.  **段落和文本处理:**
-    * **基础排版:** 确保合适的行高、字间距和段间距
-    * **增强段落视觉吸引力:**
-        * 设计专属段落风格（如首行缩进、首字母特殊处理等）
-        * 创建特殊的引用、注释或重点段落样式
-        * 使用微妙的背景色或边框标识不同类型的内容
-        * 应用衬线或无衬线字体，匹配整体设计风格
-
-10. **视觉层次与导航:**
-    * **标题层级:** 为各级标题设计清晰的视觉层级关系，通过：
-        * 字体大小的渐进变化
-        * 字重的变化（从加粗到常规）
-        * 颜色强调或装饰元素
-        * 上下边距的精心设计
-    * **视觉分段:** 使用视觉元素（如分隔线、空间间隔、背景色变化）创建内容区块感
+**样式要求:**
+${styleTemplates}
 
 **最终检查:**
 在提交最终HTML前，请再次确认：
@@ -142,3 +112,4 @@ ${basicHtml}
 **输出:**
 直接输出添加了样式后的完整 HTML 片段。确保输出是有效的 HTML。不要包含任何额外的解释、说明或将代码包裹在 \\\\\\html ... \\\\\\ 中。
 `;
+};

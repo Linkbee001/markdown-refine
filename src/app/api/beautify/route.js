@@ -15,6 +15,7 @@ const { JSDOM } = jsdom;
 import { analyzeParagraphStructureSystemPrompt } from '../../../prompts/analyzeParagraphStructurePrompt.js';
 import { generateDocumentOutlineSystemPrompt } from '../../../prompts/generateDocumentOutlinePrompt.js';
 import { beautifyHtmlLlmAdditionalInstructions } from '../../../prompts/beautifyHtmlLlmInstructions.js';
+import { refineUserPromptSystemPrompt } from '../../../prompts/refineUserPrompt.js';
 
 // --- LLM 服务配置和工具函数 ---
 
@@ -320,61 +321,92 @@ ${state.paragraphHtml}
 	return { documentOutline: outlineJson };
 }
 
-
-// Node 4: Beautify HTML using LLM (原Node 3)
-async function beautifyHtmlWithLlm(state) {
-	console.log("--- API: BEAUTIFYING HTML WITH LLM (OpenRouter) ---");
+// Node 3.5: Refine User Prompt (NEW)
+async function refineUserPrompt(state) {
+	console.log("--- API: REFINING USER PROMPT ---");
 	if (state.error) return { error: state.error };
-	// 注意：此节点现在依赖 paragraphHtml，而不是 basicHtml
-	if (!state.paragraphHtml) {
-		// 如果 paragraphHtml 没有生成（例如 analyze_paragraphs 失败或跳过）
-		// 并且 basicHtml 存在，可以考虑使用 basicHtml 作为备选
+
+	const originalPrompt = state.userPrompt;
+
+	// If no user prompt or no API key, skip refinement
+	if (!originalPrompt || !LLM_CONFIG.apiKey) {
+		console.log("API: Skipping prompt refinement (no prompt or no API key).");
+		return { refinedUserPrompt: originalPrompt };
+	}
+
+	const systemPrompt = refineUserPromptSystemPrompt; // The prompt we just created
+
+	const result = await invokeLlm({
+		systemPrompt: systemPrompt,
+		humanPrompt: `\`${originalPrompt}\``, // Pass the original prompt to the LLM
+		modelOptions: {
+			// Optionally use a different model or temperature for refinement
+			// modelName: LLM_CONFIG.refineModel || LLM_CONFIG.defaultModel,
+			// temperature: LLM_CONFIG.refineTemperature || LLM_CONFIG.defaultTemperature,
+		},
+		parseOptions: { type: 'text', trimCodeBlocks: false }, // Expect plain text output
+	});
+
+	if (!result.success || !result.data) {
+		console.warn("API: LLM failed to refine the prompt, using original prompt.", result.error || '');
+		return { refinedUserPrompt: originalPrompt };
+	}
+
+	console.log("--- API: Successfully refined user prompt ---");
+	console.log("Original Prompt:", originalPrompt);
+	console.log("Refined Prompt:", result.data);
+	return { refinedUserPrompt: result.data };
+}
+
+// Node 4: Beautify HTML using LLM (MODIFIED)
+async function beautifyHtmlWithLlm(state) {
+	console.log("--- API: BEAUTIFYING HTML WITH LLM --- "); // Removed (OpenRouter)
+	if (state.error) return { error: state.error };
+
+	// Use paragraphHtml as primary input
+	let htmlToBeautify = state.paragraphHtml;
+	if (!htmlToBeautify) {
 		if (state.basicHtml) {
 			console.warn("API: No paragraph HTML, attempting beautification with basic HTML.");
-			state.paragraphHtml = state.basicHtml; // 使用 basicHtml
+			htmlToBeautify = state.basicHtml;
 		} else {
 			return { error: "Cannot beautify: No HTML content available." };
 		}
 	}
-	if (!state.userPrompt) {
-		console.warn("API: No user prompt provided for styling. Skipping LLM beautification.");
-		// 如果跳过美化，styledHtml 应等于 paragraphHtml
-		return { styledHtml: state.paragraphHtml };
+
+	// MODIFIED: Use refinedUserPrompt if available, otherwise fallback to userPrompt
+	const promptForBeautify = state.refinedUserPrompt || state.userPrompt;
+
+	if (!promptForBeautify) {
+		console.warn("API: No prompt provided (original or refined). Skipping LLM beautification.");
+		return { styledHtml: htmlToBeautify }; // Return unstyled
 	}
 
 	if (!LLM_CONFIG.apiKey) {
-		console.error("API Error: No API Key is set.");
-		// 如果没有key，无法美化，返回段落化的HTML
-		return { styledHtml: state.paragraphHtml, error: "Server configuration error: Missing API Key for beautification. Returning unstyled HTML." };
+		console.error("API Error: No API Key is set for beautification.");
+		return { styledHtml: htmlToBeautify, error: "Server configuration error: Missing API Key. Returning unstyled HTML." };
 	}
 
-	// 使用导入的附加指令
+	// Use the combined prompt for the beautification system message
 	const additionalInstructions = beautifyHtmlLlmAdditionalInstructions;
-	let userPromptWithInstructions = state.userPrompt + "\n" + additionalInstructions;
-	// 使用 paragraphHtml 作为输入进行美化
-	const systemPrompt = beautifySystemPromptGenerate(userPromptWithInstructions || '默认风格', state.paragraphHtml);
+	const finalUserStylePrompt = promptForBeautify + "\n" + additionalInstructions;
+	const systemPrompt = beautifySystemPromptGenerate(finalUserStylePrompt, htmlToBeautify);
 
 	const result = await invokeLlm({
 		humanPrompt: systemPrompt,
 		parseOptions: { type: 'html', trimCodeBlocks: true },
 	});
 
-	if (!result.success) {
-		console.error("API Error calling LLM for beautification:", result.error);
+	if (!result.success || !result.data) {
+		console.error("API Error calling LLM for beautification:", result.error || 'LLM returned empty content');
 		return {
-			styledHtml: state.paragraphHtml,
-			error: `LLM beautification failed. ${result.error}`
+			styledHtml: htmlToBeautify,
+			error: `LLM beautification failed. ${result.error || 'LLM returned empty content'}`
 		};
 	}
 
-	const cleanedHtml = result.data;
-	if (!cleanedHtml) {
-		console.warn("API: LLM returned empty content after beautification. Using paragraph HTML.");
-		return { styledHtml: state.paragraphHtml }; // Fallback
-	}
-
-	console.log("--- API: Successfully beautified HTML ---");
-	return { styledHtml: cleanedHtml };
+	console.log("--- API: Successfully beautified HTML --- ");
+	return { styledHtml: result.data };
 }
 
 // Node 5: Finalize HTML Document (原Node 4)
@@ -480,9 +512,10 @@ const workflow = new StateGraph({
 	channels: {
 		originalMarkdown: { value: (x, y) => y ?? x },
 		userPrompt: { value: (x, y) => y ?? x },
+		refinedUserPrompt: { value: (x, y) => y ?? x },
 		basicHtml: { value: (x, y) => y ?? x },
 		paragraphHtml: { value: (x, y) => y ?? x },
-		documentOutline: { value: (x, y) => y ?? x, default: () => [] }, // 新增: 大纲通道
+		documentOutline: { value: (x, y) => y ?? x, default: () => [] },
 		styledHtml: { value: (x, y) => y ?? x },
 		finalHtml: { value: (x, y) => y ?? x },
 		error: { value: (x, y) => y ?? x, default: () => null },
@@ -492,15 +525,17 @@ const workflow = new StateGraph({
 // 添加所有节点
 workflow.addNode("parse_markdown", parseMarkdown);
 workflow.addNode("analyze_paragraphs", analyzeParagraphStructure);
-workflow.addNode("generate_outline", generateDocumentOutline); // 新增大纲节点
+workflow.addNode("generate_outline", generateDocumentOutline);
+workflow.addNode("refine_user_prompt", refineUserPrompt);
 workflow.addNode("beautify_html", beautifyHtmlWithLlm);
 workflow.addNode("finalize_html", finalizeHtmlDocument);
 
 // 定义工作流路径
 workflow.setEntryPoint("parse_markdown");
 workflow.addEdge("parse_markdown", "analyze_paragraphs");
-workflow.addEdge("analyze_paragraphs", "generate_outline"); // analyze -> generate_outline
-workflow.addEdge("generate_outline", "beautify_html");    // generate_outline -> beautify
+workflow.addEdge("analyze_paragraphs", "generate_outline");
+workflow.addEdge("generate_outline", "refine_user_prompt");
+workflow.addEdge("refine_user_prompt", "beautify_html");
 workflow.addEdge("beautify_html", "finalize_html");
 workflow.addEdge("finalize_html", END);
 

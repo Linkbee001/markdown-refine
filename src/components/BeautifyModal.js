@@ -13,6 +13,7 @@ import {
 	Typography,
 	Chip
 } from '@mui/material';
+import { useTranslations } from 'next-intl'; // 导入 useTranslations
 
 // Import style examples
 import { styleExamples } from '../config/editorConfig'; // Adjust path if needed
@@ -27,6 +28,7 @@ const BeautifyModal = ({
 	isLoading = false,
 	error = ''
 }) => {
+	const t = useTranslations('beautifyModal'); // 获取 beautifyModal 命名空间的翻译函数
 	const [markdown, setMarkdown] = useState(initialMarkdown);
 	const [prompt, setPrompt] = useState(initialPrompt);
 
@@ -73,19 +75,19 @@ const BeautifyModal = ({
 			maxWidth="md" // Adjust size as needed
 			disableEscapeKeyDown={isLoading} // Disable Esc key if loading
 		>
-			<DialogTitle>文本美化</DialogTitle>
+			<DialogTitle>{t('title')}</DialogTitle>
 			<DialogContent dividers>
 				{/* Display Error */}
 				{error && (
 					<Typography color="error" variant="body2" sx={{ mb: 2 }}>
-						错误: {error}
+						{t('error', { error })}
 					</Typography>
 				)}
 
 				{/* Preset Style Buttons */}
 				<Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
 					<Typography variant="caption" sx={{ width: '100%', mb: 0.5, color: 'text.secondary' }}>
-						选择预设风格:
+						{t('selectPresetStyle')}
 					</Typography>
 					{styleExamples.map((style, index) => (
 						<Chip
@@ -102,7 +104,7 @@ const BeautifyModal = ({
 
 				{/* Prompt Input */}
 				<TextField
-					label="或自定义提示词 (Prompt)"
+					label={t('customPromptLabel')}
 					variant="outlined"
 					fullWidth
 					value={prompt}
@@ -115,7 +117,7 @@ const BeautifyModal = ({
 
 				{/* Markdown Input */}
 				<TextField
-					label="Markdown 原文"
+					label={t('markdownLabel')}
 					variant="outlined"
 					fullWidth
 					multiline
@@ -130,7 +132,7 @@ const BeautifyModal = ({
 			</DialogContent>
 			<DialogActions sx={{ p: '16px 24px' }}>
 				<Button onClick={onClose} disabled={isLoading} color="secondary">
-					取消
+					{t('cancel')}
 				</Button>
 				<Button
 					onClick={handleSubmit}
@@ -139,7 +141,7 @@ const BeautifyModal = ({
 					disabled={isLoading}
 					startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
 				>
-					{isLoading ? '处理中...' : '开始美化'}
+					{isLoading ? t('processing') : t('startBeautify')}
 				</Button>
 			</DialogActions>
 		</Dialog>
