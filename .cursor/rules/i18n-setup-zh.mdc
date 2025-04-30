@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 国际化设置 (next-intl, 无 i18n 路由)
+
+本项目使用 `next-intl` 进行国际化，但**不**使用基于 URL 路径段（例如 `/en/` 或 `/zh-CN/`）的 i18n 路由功能。语言的确定是在服务器端为每个请求动态处理的。
+
+## 关键文件和概念
+
+1.  **服务端配置 (`request.ts`)**: 核心逻辑位于 [`src/i18n/request.ts`](mdc:src/i18n/request.ts)。该文件使用 `next-intl/server` 中的 `getRequestConfig` 来：
+    *   读取 `NEXT_LOCALE` Cookie 以确定用户的首选语言。
+    *   如果 Cookie 缺失或无效，则回退到 [`src/i18n/config.js`](mdc:src/i18n/config.js) 中定义的默认语言。
+    *   从 `src/i18n/locales/` 目录下的 `.js` 文件动态加载相应的翻译消息。
+2.  **Next.js 插件**: [`next.config.mjs`](mdc:next.config.mjs) 文件使用 `next-intl/plugin` 中的 `createNextIntlPlugin`，并指向 `request.ts` 文件，以此集成服务端配置。
+3.  **根布局 (`layout.js`)**: 主应用程序布局是 [`src/app/layout.js`](mdc:src/app/layout.js)。它是一个 `async` 服务端组件，负责：
+    *   使用 `next-intl/server` 中的 `getLocale` 和 `getMessages`（内部使用了 `request.ts` 的配置）。
+    *   设置 `<html>` 标签的 `lang` 属性。
+    *   使用 `<NextIntlClientProvider>` 包裹应用程序 (`children`)，并将确定的 `locale` 和 `messages` 传递下去，使客户端组件可用。
+4.  **翻译文件**: 所有翻译字符串都以 JavaScript 对象导出的形式存储在 [`src/i18n/locales/zh-CN.js`](mdc:src/i18n/locales/zh-CN.js) 和 [`src/i18n/locales/en-US.js`](mdc:src/i18n/locales/en-US.js) 等文件中。
+5.  **语言切换器**: 语言切换由 [`src/components/LanguageSwitcher.js`](mdc:src/components/LanguageSwitcher.js) 组件处理。它：
+    *   使用 `next-intl` 中的 `useLocale` 获取当前激活的语言（由 `NextIntlClientProvider` 提供）。
+    *   当选择新语言时，设置 `NEXT_LOCALE` Cookie。
+    *   刷新页面 (`window.location.reload()`) 以触发 `request.ts` 中的服务端逻辑来读取新的 Cookie 值。
+6.  **组件使用**: 整个应用程序中的客户端组件（例如 [`src/app/page.js`](mdc:src/app/page.js), [`src/components/StyleEditor.tsx`](mdc:src/components/StyleEditor.tsx)）使用 `next-intl` 中的 `useTranslations` hook 来访问基于 `NextIntlClientProvider` 提供的 `locale` 的翻译字符串。
+
+## 总结
+
+此设置避免了为不同语言修改 URL。语言状态的持久化依赖于 `NEXT_LOCALE` Cookie，并且语言更改需要刷新页面。
+
+

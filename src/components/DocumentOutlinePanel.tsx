@@ -131,13 +131,14 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
                 <Typography variant="body1" sx={{ mr: 1 }}>
                   {t(typeTranslationKey(item.type))}
                 </Typography>
-                {item.specialComponents.length > 0 && (
-                  <Badge
-                    badgeContent={item.specialComponents.length}
-                    color="primary"
-                    sx={{ mr: 1 }}
-                  />
-                )}
+                {item.specialComponents &&
+                  item.specialComponents.length > 0 && (
+                    <Badge
+                      badgeContent={item.specialComponents.length}
+                      color="primary"
+                      sx={{ mr: 1 }}
+                    />
+                  )}
               </Box>
             }
             secondary={item.contentPreview}

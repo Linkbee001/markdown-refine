@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 前端 UI 布局结构 (中文)
+
+本应用的前端界面主要采用多区域布局，方便用户输入、控制、预览和导航。
+
+## 1. 顶栏 (Header/Toolbar)
+
+*   **功能**: 提供全局操作和信息展示。
+*   **显示**: 通常包含应用标题/Logo , 应用的功能按钮,以及语言切换器。
+*   **关联组件**:
+    *   [`src/components/HeaderControls.js`](mdc:src/components/HeaderControls.js) 是顶部菜单栏的核心组件。
+    *   布局在[`src/app/page.js`](mdc:src/app/page.js)组件中引用，同时相关的功能操作也在这个文件中定义。
+    *   语言切换器: [`src/components/LanguageSwitcher.js`](mdc:src/components/LanguageSwitcher.js)。	
+
+## 2. 主内容区 (Main Content Area)
+
+这是应用的核心交互区域，通常垂直划分为三个区域,从左往右依次为：
+
+### 2.1. 大纲区 (Document Outline Panel)
+
+*   **功能**: 展示由后端生成的文档结构大纲，并可能提供点击跳转功能。
+*   **显示**: 渲染从 `/api/beautify` 返回的 `documentOutline` JSON 数据，通常显示为可折叠的树状列表或嵌套列表。
+*   **关联组件**: `src/components/DocumentOutlinePanel.js`组件 。
+*   
+### 2.2. 预览区 (Preview Area)
+
+*   **功能**: 实时或在处理后显示由后端生成的、带有内联样式的 HTML 结果。
+*   **显示**: 渲染从 `/api/beautify` 返回的 `finalHtml`。渲染区域为适配移动端的显示区域，由css生成的类iphone的外壳包裹。
+*   **关联组件**: `src/components/PreviewPanel.js` 。
+
+### 2.3. 样式编辑区 (Editor Area)
+
+*   **功能**: 用户在大纲中选中一个组件后，可以在样式编辑区进行AI重新渲染或者细节微调。
+*   **关联组件**:  `src/components/StyleEditor.js` 组件。
+
+
+
+
+
+
+
+

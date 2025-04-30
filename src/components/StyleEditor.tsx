@@ -15,6 +15,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
+  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { SketchPicker } from "react-color";
@@ -107,6 +108,35 @@ const StyleEditor: React.FC<StyleEditorProps> = ({
         flexDirection: "column",
       }}
     >
+      <Box
+        sx={{
+          mb: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          flexShrink: 0,
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight="bold">
+          {t("selectedComponent", { type: elementType })}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Chip
+            label={`ID: ${elementId}`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+          <Chip
+            label={`${t("tag")}: ${elementTagName}`}
+            size="small"
+            color="secondary"
+            variant="outlined"
+          />
+        </Box>
+        <Divider sx={{ my: 1 }} />
+      </Box>
+
       <Tabs
         value={currentTab}
         onChange={handleTabChange}

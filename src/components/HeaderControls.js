@@ -41,7 +41,7 @@ export default function HeaderControls({
 	};
 
 	return (
-		<AppBar position="static" color="default" elevation={1}>
+		<AppBar position="static" color="default" elevation={0}>
 			<Toolbar sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: { xs: 1, sm: 2 } }}>
 				<Typography variant="h6" component="h1" sx={{ flexGrow: 1, mr: 2, whiteSpace: 'nowrap' }}>
 					{t('beautifier.title')}

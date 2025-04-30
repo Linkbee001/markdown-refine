@@ -39,6 +39,8 @@ export default {
 		spacing: '间距',
 		selectComponentPrompt: '请从大纲中选择一个组件来编辑样式',
 		applyButton: '应用样式',
+		selectedComponent: '已选组件: {type}',
+		tag: '标签',
 		tabs: {
 			appearance: '外观',
 			typography: '排版',
@@ -131,6 +133,9 @@ export default {
 		},
 	},
 	page: {
+		reBeautifyButton: {
+			label: "AI 重塑选中组件"
+		},
 		copyButton: {
 			default: '复制富文本',
 			preparing: '准备中...',
@@ -140,16 +145,25 @@ export default {
 			copyFailed: '复制失败',
 		},
 		error: {
+			title: "错误",
+			defaultMessage: "发生未知错误，请稍后重试或联系管理员。",
 			markdownEmpty: 'Markdown 内容不能为空。',
 			apiMissingData: 'API 响应缺少必要的数据 (finalHtml 或 documentOutline)。',
 			processingFailed: '处理失败: {message}',
+			reBeautifyFailed: "组件重塑失败: {message}",
 			loadTestDataFailed: '加载测试数据失败。',
 			generateCopyHtmlFailed: '生成用于复制的 HTML 失败。',
 			copyFailed: '复制富文本 失败。',
 			generic: '错误: {error}',
+			dismiss: '关闭'
 		},
 		export: {
+			buttonLabel: '导出',
 			notImplemented: '导出功能 ({format}) 待实现 - 导出内容:\n{content}',
+		},
+		previewPanel: {
+			title: "预览",
+			emptyState: "点击 \"AI美化\" 开始，或加载测试数据。"
 		},
 		styleEditor: {
 			title: '样式编辑器',

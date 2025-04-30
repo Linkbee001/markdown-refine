@@ -20,7 +20,7 @@ import { styleExamples } from '../config/editorConfig'; // Adjust path if needed
 
 // Assuming onSubmit expects an object like { markdown, prompt }
 const BeautifyModal = ({
-	isOpen,
+	open,
 	onClose,
 	initialMarkdown = '',
 	initialPrompt = '',
@@ -36,16 +36,16 @@ const BeautifyModal = ({
 	useEffect(() => {
 		// Only reset if the modal is actually opening with new initial values
 		// This prevents overriding user input if props re-render for other reasons
-		if (isOpen) {
+		if (open) {
 			setMarkdown(initialMarkdown);
 		}
-	}, [isOpen, initialMarkdown]);
+	}, [open, initialMarkdown]);
 
 	useEffect(() => {
-		if (isOpen) {
+		if (open) {
 			setPrompt(initialPrompt);
 		}
-	}, [isOpen, initialPrompt]);
+	}, [open, initialPrompt]);
 
 	const handleSubmit = () => {
 		if (onSubmit && !isLoading) {
@@ -69,7 +69,7 @@ const BeautifyModal = ({
 
 	return (
 		<Dialog
-			open={isOpen}
+			open={open}
 			onClose={handleDialogClose}
 			fullWidth
 			maxWidth="md" // Adjust size as needed

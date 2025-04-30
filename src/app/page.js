@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -9,38 +8,36 @@ import {
 	Paper,
 	Typography,
 	Button,
-	IconButton,
-	Switch,
 	CircularProgress,
+	Stack,
 } from '@mui/material';
-import CloseIcon from "@mui/icons-material/Close";
-import SmartphoneIcon from "@mui/icons-material/Smartphone";
-import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 
-// Import Config & Default Content
-import { defaultHtml, DEFAULT_STYLE_CONFIG } from '../config/editorConfig'; // 修正路径
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+
 
 // Import Components
-import HeaderControls from '../components/HeaderControls'; // 修正路径
-import BeautifyModal from '../components/BeautifyModal'; // 修正路径
-import DocumentOutlinePanel from "../components/DocumentOutlinePanel"; // 修正路径
-import StyleEditor from "../components/StyleEditor"; // 修正路径
+import HeaderControls from '../components/HeaderControls';
+import BeautifyModal from '../components/BeautifyModal';
+import DocumentOutlinePanel from "../components/DocumentOutlinePanel";
+import StyleEditor from "../components/StyleEditor";
+import PreviewPanel from '../components/PreviewPanel';
 
 // Import test data for Quick Test button
-import testData from '../data/testBeautifierResponse.json'; // 修正路径
+import testData from '../data/testBeautifierResponse.json';
 
 export default function Home() {
 	const router = useRouter();
-	const previewRef = useRef(null);
 	const t = useTranslations('page');
 
 	// === State for Modal ===
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMarkdown, setModalMarkdown] = useState(t('beautifyModal.initialMarkdown'));
 	const [modalPrompt, setModalPrompt] = useState(t('beautifyModal.initialPrompt'));
+	const [currentUserPrompt, setCurrentUserPrompt] = useState('');
 
 	// === State for Main Editor/Preview Display ===
 	const [mainHtmlContent, setMainHtmlContent] = useState('');
+	const [initialStyledHtml, setInitialStyledHtml] = useState('');
 	const [mainOutline, setMainOutline] = useState([]);
 	const [customStyles, setCustomStyles] = useState({});
 
@@ -80,7 +77,9 @@ export default function Home() {
 							styleString += `${cssProperty}: ${value}; `;
 						}
 					}
-					element.setAttribute("style", styleString.trim());
+					const existingStyle = element.getAttribute('style') || '';
+					const newStyle = `${existingStyle ? existingStyle + '; ' : ''}${styleString.trim()}`;
+					element.setAttribute("style", newStyle);
 				} else {
 					console.warn(`[getStyledHtml] Element #${id} not found in base HTML.`);
 				}
@@ -103,10 +102,12 @@ export default function Home() {
 		setIsLoading(true);
 		setError('');
 		setMainHtmlContent('');
+		setInitialStyledHtml('');
 		setMainOutline([]);
 		setCustomStyles({});
 		setSelectedItemId(null);
 		setSelectedItemStyles({});
+		setCurrentUserPrompt(modalPmt);
 
 		try {
 			const response = await fetch('/api/beautify', {
@@ -117,6 +118,7 @@ export default function Home() {
 			const data = await response.json();
 			if (!response.ok) throw new Error(data.error || `HTTP error! status: ${response.status}`);
 			if (data.finalHtml && data.documentOutline) {
+				setInitialStyledHtml(data.finalHtml);
 				setMainHtmlContent(data.finalHtml);
 				setMainOutline(data.documentOutline);
 				setIsModalOpen(false);
@@ -127,11 +129,14 @@ export default function Home() {
 		} catch (e) {
 			console.error("Frontend Error calling /api/beautify:", e);
 			setError(t('error.processingFailed', { message: e.message }));
+			setCurrentUserPrompt('');
+			setInitialStyledHtml('');
 		} finally {
 			setIsLoading(false);
 		}
 	}, [
 		setMainHtmlContent,
+		setInitialStyledHtml,
 		setMainOutline,
 		setIsModalOpen,
 		setIsLoading,
@@ -139,6 +144,7 @@ export default function Home() {
 		setCustomStyles,
 		setSelectedItemId,
 		setSelectedItemStyles,
+		setCurrentUserPrompt,
 		t
 	]);
 
@@ -151,21 +157,36 @@ export default function Home() {
 		setCustomStyles({});
 		setSelectedItemId(null);
 		setSelectedItemStyles({});
+		setCurrentUserPrompt(t('beautifyModal.initialPrompt'));
 
-		if (testData && testData.finalHtml && testData.documentOutline) {
-			setMainHtmlContent(testData.finalHtml);
-			setMainOutline(testData.documentOutline);
-			console.log("Test data loaded successfully.");
-		} else {
-			console.error("Failed to load test data from JSON.");
-			setError(t('error.loadTestDataFailed'));
-			setMainHtmlContent("");
-			setMainOutline([]);
+		try {
+			if (testData && testData.finalHtml && testData.documentOutline) {
+				console.log("Test data found. HTML length:", testData.finalHtml.length);
+				console.log("Outline items:", testData.documentOutline.length);
+
+				setInitialStyledHtml(testData.finalHtml);
+				setMainHtmlContent(testData.finalHtml);
+				setMainOutline(testData.documentOutline);
+
+				console.log("Test data loaded successfully");
+				setTimeout(() => {
+					console.log("Check if content was set - mainHtmlContent length:", mainHtmlContent?.length || 0);
+				}, 100);
+			} else {
+				console.error("Failed to load test data from JSON.");
+				console.error("testData object:", testData);
+				setError(t('error.loadTestDataFailed'));
+				setMainHtmlContent("");
+				setInitialStyledHtml("");
+				setMainOutline([]);
+				setCurrentUserPrompt('');
+			}
+		} finally {
+			setIsLoading(false);
 		}
-
-		setIsLoading(false);
 	}, [
 		setMainHtmlContent,
+		setInitialStyledHtml,
 		setMainOutline,
 		setCustomStyles,
 		setIsLoading,
@@ -173,7 +194,9 @@ export default function Home() {
 		setCopyButtonText,
 		setSelectedItemId,
 		setSelectedItemStyles,
-		t
+		setCurrentUserPrompt,
+		t,
+		mainHtmlContent
 	]);
 
 	// Handle Copying HTML
@@ -217,11 +240,12 @@ export default function Home() {
 	// Handle Export
 	const handleExport = useCallback((format) => {
 		if (!mainHtmlContent) return;
+		const styledHtmlToExport = getStyledHtml(mainHtmlContent, customStyles);
 		alert(t('export.notImplemented', {
 			format,
-			content: mainHtmlContent.substring(0, 100) + '...'
+			content: styledHtmlToExport.substring(0, 100) + '...'
 		}));
-	}, [mainHtmlContent, t]);
+	}, [mainHtmlContent, customStyles, getStyledHtml, t]);
 
 	// Helper function to find item by ID recursively in outline
 	const findItemById = (items, id) => {
@@ -235,210 +259,79 @@ export default function Home() {
 		return null;
 	};
 
+	// Handle Selection from Outline or Preview Click
 	const handleOutlineItemSelect = useCallback((id) => {
 		setSelectedItemId(id);
-		if (previewRef.current) {
-			const element = previewRef.current.querySelector(`#${id}`);
-			if (element) {
-				element.scrollIntoView({ behavior: "smooth", block: "center" });
-				document.querySelectorAll('.temp-highlight').forEach(el => el.classList.remove('temp-highlight'));
-				element.classList.add("temp-highlight");
+		const outlineItem = findItemById(mainOutline, id);
+		setSelectedItemType(outlineItem ? outlineItem.type : t('styleEditor.unknownType'));
+		setSelectedItemTagName(outlineItem ? outlineItem.tagName : "");
+		setSelectedItemStyles({});
+	}, [mainOutline, t, setSelectedItemId, setSelectedItemType, setSelectedItemTagName, setSelectedItemStyles]);
 
-				const outlineItem = findItemById(mainOutline, id);
-				setSelectedItemType(outlineItem ? outlineItem.type : t('styleEditor.unknownType'));
-				setSelectedItemTagName(outlineItem ? outlineItem.tagName : "");
-
-				if (customStyles[id]) {
-					console.log(`Loading styles for ${id} from customStyles state.`);
-					setSelectedItemStyles({ ...customStyles[id] });
-				} else {
-					console.log(`Reading initial styles for ${id} from DOM.`);
-					const styleString = element.getAttribute("style") || "";
-					const computedStyles = window.getComputedStyle(element);
-					const styleObj = {};
-					styleString.split(";").forEach((style) => {
-						if (style.trim()) {
-							const [property, value] = style.split(":");
-							if (property && value) {
-								let key = property.trim();
-								if (key === 'background-color') key = 'backgroundColor';
-								if (key === 'border-color') key = 'borderColor';
-								if (key === 'border-width') key = 'borderWidth';
-								if (key === 'border-radius') key = 'borderRadius';
-								if (key === 'font-size') key = 'fontSize';
-								if (key === 'font-weight') key = 'fontWeight';
-								styleObj[key] = value.trim();
-							}
-						}
-					});
-
-					const resolvedBgColor = computedStyles.backgroundColor;
-					const resolvedColor = computedStyles.color;
-					const resolvedBorderColor = computedStyles.borderColor;
-
-					const initialBgColor = styleObj.backgroundColor && !styleObj.backgroundColor.startsWith('var(')
-						? styleObj.backgroundColor
-						: resolvedBgColor;
-					const initialColor = styleObj.color && !styleObj.color.startsWith('var(')
-						? styleObj.color
-						: resolvedColor;
-					const initialBorderColor = styleObj.borderColor && !styleObj.borderColor.startsWith('var(')
-						? styleObj.borderColor
-						: resolvedBorderColor;
-
-					setSelectedItemStyles({
-						backgroundColor: initialBgColor,
-						color: initialColor,
-						borderColor: initialBorderColor,
-						borderWidth: styleObj.borderWidth || computedStyles.borderWidth,
-						borderRadius: styleObj.borderRadius || computedStyles.borderRadius,
-						padding: styleObj.padding || computedStyles.padding,
-						margin: styleObj.margin || computedStyles.margin,
-						fontSize: styleObj.fontSize || computedStyles.fontSize,
-						fontWeight: styleObj.fontWeight || computedStyles.fontWeight,
-					});
-				}
+	const handleApplyManualStyles = useCallback((stylesToApply) => {
+		if (!selectedItemId) return;
+		console.log(`Applying manual styles to ${selectedItemId}:`, stylesToApply);
+		setCustomStyles((prev) => ({
+			...prev,
+			[selectedItemId]: {
+				...(prev[selectedItemId] || {}),
+				...stylesToApply
 			}
-		}
-	}, [
-		mainOutline,
-		previewRef,
-		customStyles,
-		setSelectedItemId,
-		setSelectedItemType,
-		setSelectedItemTagName,
-		setSelectedItemStyles,
-		t
-	]);
+		}));
+		setSelectedItemStyles(prev => ({ ...prev, ...stylesToApply }));
+	}, [selectedItemId, setCustomStyles, setSelectedItemStyles]);
 
-	// --- Style Application Handler ---
-	const applyStylesToElement = useCallback((styles) => {
-		console.log("--- applyStylesToElement called ---");
-		console.log("Selected Item ID:", selectedItemId);
-		console.log("Styles to apply:", styles);
-
-		if (selectedItemId) {
-			setCustomStyles(prevStyles => ({
-				...prevStyles,
-				[selectedItemId]: { ...styles }
-			}));
-			setSelectedItemStyles({ ...styles });
-			console.log("Custom styles state updated.");
-		} else {
-			console.warn("applyStylesToElement skipped: No selectedItemId.");
-		}
-	}, [selectedItemId, setSelectedItemStyles, setCustomStyles]);
-
-	// --- Effect to synchronize customStyles to the preview DOM ---
-	useEffect(() => {
-		if (!previewRef.current || !mainHtmlContent) {
+	const handleReBeautifyComponent = useCallback(async () => {
+		if (!selectedItemId || !initialStyledHtml || !currentUserPrompt || isLoading) {
+			console.warn("Cannot re-beautify component. Missing ID, initial HTML, prompt, or already loading.");
 			return;
 		}
-		console.log("--- Syncing customStyles to DOM ---", customStyles);
 
-		for (const [id, styles] of Object.entries(customStyles)) {
-			const element = previewRef.current.querySelector(`#${id}`);
-			if (element) {
-				let styleString = "";
-				for (const [key, value] of Object.entries(styles)) {
-					if (value !== null && value !== undefined && value !== '') {
-						const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
-						styleString += `${cssProperty}: ${value}; `;
-					}
-				}
-				const finalStyleString = styleString.trim();
-				console.log(`Applying to #${id}: ${finalStyleString}`);
-				element.setAttribute("style", finalStyleString);
-			} else {
-				console.warn(`Element #${id} not found in preview DOM during style sync.`);
+		console.log(`Requesting re-beautification for ${selectedItemId} with prompt: "${currentUserPrompt}"`);
+		setIsLoading(true);
+		setError('');
+
+		try {
+			const response = await fetch('/api/beautify-component', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					html: initialStyledHtml,
+					componentId: selectedItemId,
+					prompt: currentUserPrompt,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || `HTTP error! status: ${response.status}`);
 			}
+
+			if (data.html) {
+				console.log("Re-beautification successful. Updating HTML.");
+				setInitialStyledHtml(data.html);
+				setMainHtmlContent(data.html);
+				setCustomStyles({});
+				setSelectedItemId(null);
+				setSelectedItemStyles({});
+				setSelectedItemType("");
+				setSelectedItemTagName("");
+				setError('');
+			} else {
+				setError(t('error.apiMissingData'));
+			}
+
+		} catch (e) {
+			console.error("Frontend Error calling /api/beautify-component:", e);
+			setError(t('error.reBeautifyFailed', { message: e.message }));
+		} finally {
+			setIsLoading(false);
 		}
-	}, [customStyles, mainHtmlContent, previewRef]);
-
-	// --- Add back MobileDeviceFrame Component Definition ---
-	const MobileDeviceFrame = ({ children }) => (
-		<Box sx={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", p: 2, overflow: "auto" }}>
-			<Box sx={{ width: "375px", maxWidth: "90%", height: "100%", maxHeight: "750px", borderRadius: "36px", position: "relative", overflow: "hidden", boxShadow: "0 0 20px rgba(0,0,0,0.2)", border: "14px solid #111", display: "flex", flexDirection: "column" }}>
-				<Box sx={{ position: "absolute", top: 0, width: "60%", height: "28px", backgroundColor: "#111", zIndex: 2, borderBottomLeftRadius: "18px", borderBottomRightRadius: "18px", left: "50%", transform: "translateX(-50%)" }} />
-				<Box sx={{ mt: "28px", flexGrow: 1, overflow: "auto", width: "100%", backgroundColor: "#fff" }}>
-					{children}
-				</Box>
-				<Box sx={{ height: "4px", backgroundColor: "#111", width: "40%", mx: "auto", mb: 1, borderRadius: "2px" }} />
-			</Box>
-		</Box>
-	);
-
-	// --- Inline Component Definitions ---
-	function DesktopMobilePreviewPanel() {
-		return (
-			<MobileDeviceFrame>
-				<Box sx={{ overflow: "auto", width: "100%", height: "100%", backgroundColor: "white" }}>
-					<style>{`
-            .temp-highlight { box-shadow: 0 0 0 2px #2196f3 !important; position: relative; zIndex: 1; }
-            #preview-container { word-wrap: break-word; padding: 12px; max-width: 100%; }
-            #preview-container * { box-sizing: border-box; max-width: 100%; }
-            #preview-container img { height: auto; }
-          `}</style>
-					<div id="preview-container" ref={previewRef} dangerouslySetInnerHTML={{ __html: mainHtmlContent }} />
-				</Box>
-			</MobileDeviceFrame>
-		);
-	}
-
-	// --- Panel Components for Layout ---
-	const outlinePanel = (
-		<Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-			<DocumentOutlinePanel
-				outline={mainOutline}
-				selectedId={selectedItemId}
-				onSelectItem={handleOutlineItemSelect}
-			/>
-		</Box>
-	);
-
-	const styleEditorPanel = (
-		<Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-			{selectedItemId ? (
-				<>
-					<Typography variant="h6" sx={{ mb: 1, flexShrink: 0 }}>
-						{t('styleEditor.titleWithType', { type: selectedItemType })}
-						{selectedItemTagName && (
-							<Typography
-								component="span"
-								variant="body2"
-								sx={{ ml: 1, color: "gray" }}
-							>
-								{t('styleEditor.tagInfo', { tagName: selectedItemTagName.toUpperCase() })}
-							</Typography>
-						)}
-					</Typography>
-					<Typography
-						variant="caption"
-						sx={{ mb: 0, color: "text.secondary", flexShrink: 0 }}
-					>
-						{t('styleEditor.idInfo', { id: selectedItemId })}
-					</Typography>
-				</>
-			) : (
-				<Typography variant="h6" sx={{ mb: 1 }}>{t('styleEditor.title')}</Typography>
-			)}
-			<StyleEditor
-				elementId={selectedItemId}
-				elementType={selectedItemType}
-				elementTagName={selectedItemTagName}
-				initialStyles={selectedItemStyles}
-				onApplyStyles={applyStylesToElement}
-			/>
-		</Box>
-	);
-
-	// --- Render ---
-	if (!hasMounted) {
-		return null;
-	}
+	}, [selectedItemId, initialStyledHtml, currentUserPrompt, isLoading, setInitialStyledHtml, setMainHtmlContent, setCustomStyles, setSelectedItemId, setSelectedItemStyles, setSelectedItemType, setSelectedItemTagName, setIsLoading, setError, t]);
 
 	return (
-		<Box sx={{ display: "flex", flexDirection: "column", height: "100vh", width: "100%", overflow: "hidden", bgcolor: 'grey.100' }}>
+		<Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
 			<HeaderControls
 				isLoading={isLoading}
 				onBeautify={() => setIsModalOpen(true)}
@@ -449,39 +342,69 @@ export default function Home() {
 				onExport={handleExport}
 			/>
 
-			{error && !isModalOpen && (
-				<Typography color="error" variant="body2" sx={{ p: 1, bgcolor: 'error.light' }}>
-					{t('error.generic', { error })}
-				</Typography>
-			)}
+			<Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+				<Paper
+					elevation={1}
+					sx={{ width: 250, overflowY: 'auto', flexShrink: 0, borderRight: '1px solid #e0e0e0' }}
+				>
+					<DocumentOutlinePanel
+						outline={mainOutline}
+						onSelectItem={handleOutlineItemSelect}
+						selectedId={selectedItemId}
+					/>
+				</Paper>
 
-			<Box sx={{ display: "flex", flexGrow: 1, p: 2, gap: 2, overflow: "hidden" }}>
-				<Box sx={{ width: "25%", minWidth: 220, maxWidth: 350, height: "100%", overflow: "auto", bgcolor: 'background.paper', borderRadius: 1, p: 2 }}>
-					{mainOutline.length > 0 ? outlinePanel : <Typography sx={{ p: 0 }}>{t('noOutline')}</Typography>}
+				<Box sx={{ flexGrow: 4, display: 'flex', flexDirection: 'column', p: 1, overflow: 'hidden' }}>
+					<PreviewPanel
+						htmlResult={mainHtmlContent}
+						tempHtmlResult={null}
+						isLoading={isLoading}
+						error={error}
+						onClearError={() => setError('')}
+						selectedElementId={selectedItemId}
+					/>
 				</Box>
 
-				<Box sx={{ flexGrow: 1, height: "100%", overflow: "auto" }}>
-					{mainHtmlContent ? <DesktopMobilePreviewPanel /> :
-						<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-							<Typography sx={{ textAlign: 'center', color: 'text.secondary' }}>{t('promptStartBeautify')}</Typography>
+				<Paper
+					elevation={1}
+					sx={{ width: 300, p: 1, overflowY: 'hidden', flexShrink: 0, borderLeft: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column' }}
+				>
+					<Stack spacing={1} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+						<Button
+							variant="contained"
+							color="secondary"
+							startIcon={<AutoFixHighIcon />}
+							onClick={handleReBeautifyComponent}
+							disabled={!selectedItemId || isLoading || !initialStyledHtml || !currentUserPrompt}
+							sx={{ flexShrink: 0, mt: 1, mx: 1 }}
+						>
+							{t('reBeautifyButton.label')}
+						</Button>
+
+						<Box sx={{ flexGrow: 1, overflowY: 'auto', mt: 1 }}>
+							<StyleEditor
+								elementId={selectedItemId}
+								elementType={selectedItemType}
+								elementTagName={selectedItemTagName}
+								initialStyles={selectedItemStyles}
+								onApplyStyles={handleApplyManualStyles}
+							/>
 						</Box>
-					}
-				</Box>
-
-				<Box sx={{ width: "25%", minWidth: 220, maxWidth: 350, height: "100%", overflow: "visible", bgcolor: 'background.paper', borderRadius: 1, p: 2 }}>
-					{styleEditorPanel}
-				</Box>
+					</Stack>
+				</Paper>
 			</Box>
 
-			<BeautifyModal
-				isOpen={isModalOpen}
-				onClose={() => setIsModalOpen(false)}
-				initialMarkdown={modalMarkdown}
-				initialPrompt={modalPrompt}
-				onSubmit={handleBeautify}
-				isLoading={isLoading}
-				error={error}
-			/>
+			{isModalOpen && (
+				<BeautifyModal
+					open={isModalOpen}
+					initialMarkdown={modalMarkdown}
+					initialPrompt={modalPrompt}
+					isLoading={isLoading}
+					error={error}
+					onClose={() => { setIsModalOpen(false); setError(''); }}
+					onSubmit={handleBeautify}
+				/>
+			)}
 		</Box>
 	);
 } 

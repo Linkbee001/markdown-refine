@@ -3,9 +3,11 @@ description:
 globs: 
 alwaysApply: false
 ---
-# 程序智能体提示词代码编写规则
+# AI Agent 系统提示词 (System Prompt) 编写规范
 
 ## 基本结构
+
+这是一个通用的 Agent 系统提示词生成函数模板，可以根据具体任务进行调整：
 
 ```javascript
 export const agentSystemPrompt = (context, userOptions) => `
@@ -43,8 +45,8 @@ ${userOptions.additionalInstructions || ''}
 
 ### 1. 文件组织
 
-- 每个智能体提示词应单独存放在 `src/prompts/` 目录下
-- 文件名应清晰表明智能体的用途，如 `codeGenerationAgentPrompt.js`
+- 每个智能体提示词应单独存放在 [`src/prompts/`](mdc:src/prompts) 目录下
+- 文件名应清晰表明智能体的用途，如 [`codeGenerationAgentPrompt.js`](mdc:src/prompts/codeGenerationAgentPrompt.js)
 - 相关的辅助函数应放在同一文件中
 
 ### 2. 总体设计
@@ -90,7 +92,7 @@ ${userOptions.additionalInstructions || ''}
 ## 示例实现
 
 ```javascript
-// src/prompts/markdownBeautifierAgentPrompt.js
+// [`src/prompts/markdownBeautifierAgentPrompt.js`](mdc:src/prompts/markdownBeautifierAgentPrompt.js)
 
 export const markdownBeautifierAgentPrompt = (context = {}, userOptions = {}) => {
   // 默认值处理
@@ -128,4 +130,4 @@ ${userOptions.additionalInstructions || ""}
 直接输出完整的HTML代码，不包含任何解释或标记。
 `;
 };
-```
+

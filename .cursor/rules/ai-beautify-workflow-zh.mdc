@@ -1,0 +1,125 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# AI美化功能完整流程
+
+本应用核心功能是AI驱动的Markdown美化，通过大型语言模型(LLM)将普通Markdown转换为具有精美样式的HTML。以下详细分析整个流程：
+
+## 前端交互流程
+
+1. **初始交互入口**
+   - 用户通过顶栏的[`HeaderControls.js`](mdc:src/components/HeaderControls.js)组件中的"AI美化"按钮触发交互
+   - 点击按钮后，在[`src/app/page.js`](mdc:src/app/page.js)中调用`setIsModalOpen(true)`打开美化对话框
+
+2. **美化参数输入**
+   - [`BeautifyModal.js`](mdc:src/components/BeautifyModal.js)模态框展示，允许用户：
+     - 输入Markdown原文（可使用默认示例文本）
+     - 输入样式提示词（如"使用简洁专业的技术博客风格"）
+     - 选择预设风格（如有）
+   - 用户点击"开始美化"按钮，调用`onSubmit`函数
+
+3. **发送请求与等待**
+   - 在[`src/app/page.js`](mdc:src/app/page.js)中的`handleBeautify`函数处理请求：
+     - 设置加载状态`setIsLoading(true)`
+     - 发送POST请求到`/api/beautify`端点，携带markdown内容和样式提示
+     - 显示加载动画，等待服务器响应
+
+4. **响应处理与展示**
+   - 请求成功后，处理返回结果：
+     - 设置HTML内容：`setMainHtmlContent(data.finalHtml)`
+     - 设置文档大纲：`setMainOutline(data.documentOutline)`
+     - 关闭模态框：`setIsModalOpen(false)`
+   - 结果在三个主要区域展示：
+     - 左侧大纲面板（[`DocumentOutlinePanel.js`](mdc:src/components/DocumentOutlinePanel.js)）显示文档结构
+     - 中央预览区域以移动设备框架形式展示美化后的HTML内容
+     - 右侧提供样式编辑功能，允许进一步调整样式
+
+5. **组件单独美化**
+   - 用户可以从大纲或预览中选择特定组件（如段落、标题）
+   - 使用右侧面板的"AI重塑选中组件"功能
+   - 通过`handleReBeautifyComponent`函数发送请求到`/api/beautify-component`端点
+   - 返回更新后的整个HTML，但只有选中组件的样式被重新美化
+
+## 后端处理流程 (LangGraph工作流)
+
+后端使用LangGraph构建了一个多步骤的AI处理流水线，定义在[`src/app/api/beautify/route.js`](mdc:src/app/api/beautify/route.js)：
+
+1. **初始化与输入**
+   - 接收请求体中的`markdown`和`prompt`参数
+   - 初始化LangGraph工作流，定义状态通道和节点流转规则
+
+2. **Markdown解析 (`parse_markdown`节点)**
+   - 使用`marked`库将Markdown转换为基础HTML
+   - 初步处理：添加组件类和ID标识，便于后续处理
+   - 通过`addComponentClassesToHtml`函数为HTML元素添加语义化类名
+
+3. **段落结构分析 (`analyze_paragraphs`节点)**
+   - 调用LLM（使用`analyzeParagraphStructureSystemPrompt`指导）
+   - 识别文档中的段落、标题、列表等结构
+   - 为每个内容块添加`paragraph-component`类和唯一ID
+   - 增强文档的语义结构，为后续处理奠定基础
+
+4. **文档大纲生成 (`generate_outline`节点)**
+   - 调用LLM（使用`generateDocumentOutlineSystemPrompt`指导）
+   - 基于前一步添加结构标记的HTML生成JSON格式文档大纲
+   - 大纲包含每个段落的ID、类型、内容预览等信息
+   - 如果LLM调用失败，会fallback到基本大纲生成算法
+
+5. **提示词优化 (`refine_user_prompt`节点)**
+   - 调用LLM（使用`refineUserPromptSystemPrompt`指导）
+   - 对用户原始样式提示进行理解、丰富和扩写
+   - 生成更详细的`refinedUserPrompt`，包含视觉元素、色彩、排版等细节
+   - 如果用户未提供提示或无API密钥，则跳过此步骤
+
+6. **HTML美化 (`beautify_html`节点)**
+   - 核心美化步骤，调用LLM（可能是`claude-3`或其他模型）
+   - 使用经过润色的提示词（如可用）或原始用户提示
+   - 系统提示由`beautifySystemPromptGenerate`函数动态生成，加载`templates/basic/`目录下的`.md`文件作为组件样式指令
+   - 添加内联样式（`style="..."`）以实现视觉美化
+   - 特别关注移动端友好性和富文本编辑器兼容性
+
+7. **HTML完成 (`finalize_html`节点)**
+   - 将美化后的HTML内容包装在完整的HTML骨架中
+   - 添加基础CSS样式，确保在不同环境中的一致呈现
+   - 构建最终的`finalHtml`和`documentOutline`作为API响应
+
+## 组件再美化流程
+
+当用户选择单个组件进行再美化时，使用的是简化版工作流：
+
+1. **组件提取**
+   - 从完整HTML中提取选中组件的HTML片段
+   - 保留组件的原始ID和类名
+
+2. **组件美化**
+   - 使用与主流程相同的美化逻辑，但仅针对单个组件
+   - 应用用户的样式提示（通常与全文档使用相同提示）
+
+3. **组件替换**
+   - 验证和修复AI生成的组件HTML，确保ID和标签一致性
+   - 将美化后的组件HTML替换回原始文档中
+   - 返回更新后的完整HTML
+
+## 关键辅助功能
+
+1. **模型配置与调用**
+   - 通过`llmService.js`中的函数统一管理LLM调用
+   - 支持从环境变量读取API密钥和模型参数
+   - 实现错误处理和响应清理
+
+2. **HTML处理服务**
+   - 通过`htmlService.js`提供HTML解析、结构化和修改功能
+   - 使用`jsdom`库在服务端进行DOM操作
+
+3. **提示工程**
+   - 在`prompts/`目录下划分不同功能的提示模板：
+     - 段落分析提示：`analyzeParagraphStructurePrompt.js`
+     - 大纲生成提示：`generateDocumentOutlinePrompt.js`
+     - 提示词优化提示：`refineUserPrompt.js`
+     - 美化系统提示：`beautifySystemPrompt.js`（动态加载组件样式模板）
+     - 组件样式模板：`templates/basic/*.md`
+
+这个复杂而精密的工作流程确保了从普通Markdown到精美HTML的高质量转换，同时提供了灵活的用户交互和样式定制选项。
+

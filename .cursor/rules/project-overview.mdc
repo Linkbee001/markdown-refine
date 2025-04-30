@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # 项目概览：Markdown 美化器 (Markdown Beautifier)
 
@@ -18,16 +18,16 @@ alwaysApply: false
 ## 技术栈与实现关键点
 
 ### 技术栈
-- **前端**: Next.js (App Router), React, Material UI (MUI)
+- **前端**: Next.js (App Router), React, Material UI (MUI), 使用pnpm作为包管理工具
 - **后端**: Next.js API Routes
 - **AI/LLM**: LangChain.js (@langchain/langgraph, @langchain/openai), 支持 OpenRouter, OpenAI, Anthropic 等提供商。
 - **Markdown 解析**: `marked` 库。
 - **服务器端 DOM 操作**: `jsdom` 库。
-- **配置**: 使用 `.env.local` 文件管理 API 密钥、模型名称、基础 URL 等敏感信息和环境配置。
+- **配置**: 使用 [`.env.local`](mdc:.env.local) 文件管理 API 密钥、模型名称、基础 URL 等敏感信息和环境配置。
 
 ### 实现细节
 
-#### 后端 API (`/api/beautify` - `src/app/api/beautify/route.js`)
+#### 后端 API (`/api/beautify` - [`src/app/api/beautify/route.js`](mdc:src/app/api/beautify/route.js))
 
 后端是核心处理逻辑所在，通过一个 POST API 端点接收 Markdown 内容和用户样式提示 (prompt)，并利用 LangGraph 构建了一个多步骤的 AI 处理流水线：
 
@@ -57,8 +57,61 @@ alwaysApply: false
 - 将 `finalHtml` 渲染到预览区域（可能通过 `dangerouslySetInnerHTML` 或 iframe）。
 - 基于 `documentOutline` 数据渲染可交互的文档大纲。
 
-#### 国际化 (`src/i18n`)
+#### 国际化
 
-- 语言文件位于 `src/i18n/locales/`。
+详细的国际化配置和实现请参考 [`i18n-setup-zh.mdc`](mdc:.cursor/rules/i18n-setup-zh.mdc)。
 
-- 配置文件 (`config.js`, `index.js`) 用于管理支持的语言和加载翻译。 
+# 前端 UI 布局结构 (中文)
+
+本应用的前端界面主要采用多区域布局，方便用户输入、控制、预览和导航。
+
+## 1. 顶栏 (Header/Toolbar)
+
+*   **功能**: 提供全局操作和信息展示。
+*   **显示**: 通常包含应用标题/Logo 和语言切换器。
+*   **关联组件**:
+    *   可能是 [`src/app/layout.js`](mdc:src/app/layout.js) 或其子组件的一部分。
+    *   语言切换器: [`src/components/LanguageSwitcher.js`](mdc:src/components/LanguageSwitcher.js)。
+
+## 2. 主内容区 (Main Content Area)
+
+这是应用的核心交互区域，通常水平或垂直划分为以下几个模块：
+
+### 2.1. 输入区 (Input Area)
+
+*   **功能**: 供用户粘贴或编辑原始 Markdown 文本。
+*   **显示**: 一个文本编辑器（可能是简单的 `<textarea>` 或集成 Monaco Editor/CodeMirror 等）。
+*   **关联组件**: 可能是 `src/components/MarkdownEditor.js` 或类似组件 (具体名称需确认)。
+
+### 2.2. 控制面板 (Control Panel)
+
+*   **功能**: 用户输入样式提示、触发美化操作、配置 AI 选项。
+*   **显示**:
+    *   一个文本输入框用于填写样式提示 (`prompt`)。
+    *   (可能) 一个开关或复选框，用于启用/禁用 AI 对提示词的润色 (`refine_user_prompt`)。
+    *   一个"美化"或"处理"按钮，用于触后端 API 调用。
+*   **关联组件**: 可能是 `src/components/ControlPanel.js` 或类似组件，包含 MUI 的输入框、按钮等。与 [`src/app/page.js`](mdc:src/app/page.js) 中的状态管理逻辑紧密相关。
+
+### 2.3. 预览区 (Preview Area)
+
+*   **功能**: 实时或在处理后显示由后端生成的、带有内联样式的 HTML 结果。
+*   **显示**: 渲染从 `/api/beautify` 返回的 `finalHtml`。这通常通过 `iframe` 或 `dangerouslySetInnerHTML` 实现。
+*   **关联组件**: 可能是 `src/components/PreviewPane.js` 或类似组件。
+
+### 2.4. 大纲区 (Outline Panel)
+
+*   **功能**: 展示由后端生成的文档结构大纲，并可能提供点击跳转功能。
+*   **显示**: 渲染从 `/api/beautify` 返回的 `documentOutline` JSON 数据，通常显示为可折叠的树状列表或嵌套列表。
+*   **关联组件**: 可能是 `src/components/OutlineViewer.js` 或类似组件。
+
+## 3. 底栏 (Footer) - 可选
+
+*   **功能**: 显示版权信息、相关链接等。
+*   **显示**: 简单的文本或链接。
+*   **关联组件**: 可能是 `src/components/Footer.js` 或直接在 [`src/app/layout.js`](mdc:src/app/layout.js) 中实现。
+
+## 整体布局协调
+
+*   整体布局可能由主页面组件（例如 [`src/app/page.js`](mdc:src/app/page.js)）和根布局文件（[`src/app/layout.js`](mdc:src/app/layout.js)）共同管理。
+*   Material UI (MUI) 的 Grid、Stack 或 Box 组件可能被用来组织这些模块。
+*   状态管理（如用户输入的 Markdown、样式提示、API 返回结果等）可能集中在页面级组件 (`page.js`) 或通过 React Context/Zustand 等状态管理库实现。 

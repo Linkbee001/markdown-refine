@@ -39,6 +39,8 @@ export default {
 		spacing: 'Spacing',
 		selectComponentPrompt: 'Please select a component from the outline to edit styles',
 		applyButton: 'Apply Styles',
+		selectedComponent: 'Selected Component: {type}',
+		tag: 'Tag',
 		tabs: {
 			appearance: 'Appearance',
 			typography: 'Typography',
@@ -131,6 +133,9 @@ export default {
 		},
 	},
 	page: {
+		reBeautifyButton: {
+			label: "AI Re-style Selected"
+		},
 		copyButton: {
 			default: 'Copy Rich Text',
 			preparing: 'Preparing...',
@@ -140,16 +145,25 @@ export default {
 			copyFailed: 'Copy Failed',
 		},
 		error: {
+			title: "Error",
+			defaultMessage: "An unknown error occurred. Please try again later or contact an administrator.",
 			markdownEmpty: 'Markdown content cannot be empty.',
 			apiMissingData: 'API response missing required data (finalHtml or documentOutline).',
 			processingFailed: 'Processing failed: {message}',
+			reBeautifyFailed: "Failed to re-style component: {message}",
 			loadTestDataFailed: 'Failed to load test data.',
 			generateCopyHtmlFailed: 'Failed to generate HTML for copying.',
 			copyFailed: 'Failed to copy rich text.',
 			generic: 'Error: {error}',
+			dismiss: 'Dismiss'
 		},
 		export: {
+			buttonLabel: 'Export',
 			notImplemented: 'Export feature ({format}) not implemented - Export content:\n{content}',
+		},
+		previewPanel: {
+			title: "Preview",
+			emptyState: "Click \"AI Beautify\" to start, or load test data."
 		},
 		styleEditor: {
 			title: 'Style Editor',
