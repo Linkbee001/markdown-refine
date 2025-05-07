@@ -271,15 +271,27 @@ export default function Home() {
 	const handleApplyManualStyles = useCallback((stylesToApply) => {
 		if (!selectedItemId) return;
 		console.log(`Applying manual styles to ${selectedItemId}:`, stylesToApply);
-		setCustomStyles((prev) => ({
-			...prev,
-			[selectedItemId]: {
-				...(prev[selectedItemId] || {}),
-				...stylesToApply
+
+		setCustomStyles((prevCustomStyles) => {
+			const newCustomStyles = {
+				...prevCustomStyles,
+				[selectedItemId]: {
+					...(prevCustomStyles[selectedItemId] || {}),
+					...stylesToApply
+				}
+			};
+
+			if (initialStyledHtml) {
+				const newHtml = getStyledHtml(initialStyledHtml, newCustomStyles);
+				setMainHtmlContent(newHtml);
+			} else {
+				console.warn("[handleApplyManualStyles] initialStyledHtml is empty. Cannot update preview with manual styles.");
 			}
-		}));
+			return newCustomStyles;
+		});
+
 		setSelectedItemStyles(prev => ({ ...prev, ...stylesToApply }));
-	}, [selectedItemId, setCustomStyles, setSelectedItemStyles]);
+	}, [selectedItemId, initialStyledHtml, getStyledHtml, setCustomStyles, setSelectedItemStyles, setMainHtmlContent]);
 
 	const handleReBeautifyComponent = useCallback(async () => {
 		if (!selectedItemId || !initialStyledHtml || !currentUserPrompt || isLoading) {

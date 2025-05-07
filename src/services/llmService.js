@@ -92,7 +92,7 @@ export async function invokeLlm(params) {
 		}
 
 		messages.push(new HumanMessage(humanPrompt));
-
+		console.log("调用LLM服务:", messages);
 		const response = await llm.invoke(messages);
 		let content = response.content;
 
@@ -205,14 +205,14 @@ export async function refinePromptWithLlm(originalPrompt, options = {}) {
 export async function beautifyHtmlWithLlm(htmlContent, userPrompt, isComponent = false, options = {}) {
 	// 导入提示词模板
 	const { beautifySystemPromptGenerate } = await import('../prompts/beautifySystemPrompt.js');
-	const { beautifyHtmlLlmAdditionalInstructions } = await import('../prompts/beautifyHtmlLlmInstructions.js');
+	// const { beautifyHtmlLlmAdditionalInstructions } = await import('../prompts/beautifyHtmlLlmInstructions.js');
 
 	// 生成系统提示词
 	const componentContext = isComponent ? "You are beautifying a single component only." : "";
 	const systemPrompt = await beautifySystemPromptGenerate(userPrompt, componentContext);
 
 	// 构建人类提示词 - 包含HTML内容和附加指令
-	const humanPrompt = `${htmlContent}\n\n${beautifyHtmlLlmAdditionalInstructions}`;
+	const humanPrompt = `${htmlContent}\n\n`;
 
 	// 调用LLM
 	return await invokeLlm({

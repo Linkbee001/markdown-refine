@@ -82,16 +82,12 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
   onSelectItem,
   level,
 }) => {
-  const [open, setOpen] = React.useState(true);
   const t = useTranslations("documentOutlinePanel.types");
 
   const hasChildren = item.children && item.children.length > 0;
 
   const handleClick = () => {
     onSelectItem(item.id);
-    if (hasChildren) {
-      setOpen(!open);
-    }
   };
 
   const typeTranslationKey = (type: string): string => {
@@ -150,11 +146,10 @@ const OutlineListItem: React.FC<OutlineListItemProps> = ({
               sx: { maxWidth: `${180 - level * 16}px` },
             }}
           />
-          {hasChildren ? open ? <ExpandLess /> : <ExpandMore /> : null}
         </ListItemButton>
       </ListItem>
       {hasChildren && (
-        <Collapse in={open} timeout="auto" unmountOnExit>
+        <Collapse in={true} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             {item.children?.map((child) => (
               <OutlineListItem

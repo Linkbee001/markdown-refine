@@ -14,19 +14,9 @@ import {
 	beautifyHtmlWithLlm
 } from '../../../services/llmService.js';
 import {
-	addComponentClassesToHtml,
 	createBasicOutlineFromHtml
 } from '../../../services/htmlService.js';
-import { NextResponse } from 'next/server';
-// Use relative paths for imports within the API route
-import { beautifySystemPromptGenerate } from '../../../prompts/beautifySystemPrompt.js';
-// 删除重复导入的JSDOM
-// import jsdom from 'jsdom'; // 需要安装 jsdom: npm install jsdom 或 yarn add jsdom
-// const { JSDOM } = jsdom;
 
-// 导入提取出来的 prompts (使用相对路径)
-import { beautifyHtmlLlmAdditionalInstructions } from '../../../prompts/beautifyHtmlLlmInstructions.js';
-import { refineUserPromptSystemPrompt } from '../../../prompts/refineUserPrompt.js';
 
 /**
  * 将Markdown解析为HTML并进行初步处理
@@ -53,13 +43,13 @@ async function parseMarkdown({ state }) {
 		const dom = new JSDOM(`<!DOCTYPE html><html><body>${initialHtml}</body></html>`);
 
 		// 使用htmlService添加更多特定组件的类名
-		const htmlWithClasses = addComponentClassesToHtml(dom.window.document.body.innerHTML);
+		// const htmlWithClasses = addComponentClassesToHtml(dom.window.document.body.innerHTML);
 
 		return {
 			state: {
 				...state,
-				htmlResult: htmlWithClasses,
-				rawHtml: htmlWithClasses,
+				htmlResult: initialHtml,
+				rawHtml: initialHtml,
 				error: null
 			}
 		};
@@ -357,7 +347,7 @@ function finalizeHtmlDocument({ state }) {
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<style>
 		/* 基础样式 */
-		body {
+		.result-body {
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 			line-height: 1.6;
 			color: #333;
@@ -368,7 +358,7 @@ function finalizeHtmlDocument({ state }) {
 		
 		/* 暗黑模式支持 */
 		@media (prefers-color-scheme: dark) {
-			body {
+			.result-body {
 				background-color: #121212;
 				color: #e0e0e0;
 			}
@@ -378,7 +368,7 @@ function finalizeHtmlDocument({ state }) {
 		}
 	</style>
 </head>
-<body>
+<body class="result-body">
 ${htmlToFinalize}
 </body>
 </html>`;

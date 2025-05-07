@@ -129,6 +129,8 @@ export default {
 			paragraphWrapper: '段落容器',
 			imageWrapper: '图片容器',
 			image: '图片',
+			text: '文本',
+			document: '文档',
 			other: '其他',
 		},
 	},

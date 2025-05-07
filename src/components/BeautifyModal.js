@@ -14,6 +14,10 @@ import {
 	Chip
 } from '@mui/material';
 import { useTranslations } from 'next-intl'; // 导入 useTranslations
+import dynamic from 'next/dynamic';
+
+// Dynamically import MDEditor to avoid SSR issues
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
 
 // Import style examples
 import { styleExamples } from '../config/editorConfig'; // Adjust path if needed
@@ -116,19 +120,20 @@ const BeautifyModal = ({
 				/>
 
 				{/* Markdown Input */}
-				<TextField
-					label={t('markdownLabel')}
-					variant="outlined"
-					fullWidth
-					multiline
-					rows={15} // Adjust rows as needed
-					value={markdown}
-					onChange={(e) => setMarkdown(e.target.value)}
-					disabled={isLoading}
-					InputProps={{
-						style: { fontFamily: 'monospace' } // Optional: Use monospace font
-					}}
-				/>
+				<Box sx={{ mb: 2 }} data-color-mode="light"> {/* data-color-mode="light" is often needed for MDEditor themes */}
+					<Typography variant="caption" sx={{ mb: 0.5, color: 'text.secondary', display: 'block' }}>
+						{t('markdownLabel')}
+					</Typography>
+					<MDEditor
+						value={markdown}
+						onChange={(value) => setMarkdown(value || '')}
+						height={400} // Adjust height as needed
+						preview="edit" // Show only editor, or "live" for live preview, "preview" for only preview
+					// visibleDragbar={false} // Optionally hide the drag bar
+					// extraCommands={[]} // Optionally add extra commands
+					// commands={[]} // Optionally customize commands
+					/>
+				</Box>
 			</DialogContent>
 			<DialogActions sx={{ p: '16px 24px' }}>
 				<Button onClick={onClose} disabled={isLoading} color="secondary">
