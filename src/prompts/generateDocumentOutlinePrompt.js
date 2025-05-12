@@ -12,7 +12,7 @@ export const generateDocumentOutlineSystemPrompt = `
 3.  对于每个段落元素，提取并生成以下信息：
     *   'id': 元素的 'id' 属性值 (例如: "paragraph-1")。
     *   'type': 固定为"paragraph"类型。
-    *   'tagName': 元素的小写标签名 (例如: "p")。
+    *   'tagName': 元素的小写标签名 (例如: "div")。
     *   'children': 一个数组，包含此段落块内部识别出的子元素信息。
 3.  对于每个段落的每个子元素元素，提取并生成以下信息，并添加到段落的'children'数组中：
     *   'id': 元素的 'id' 属性值 (例如: "component-1")。

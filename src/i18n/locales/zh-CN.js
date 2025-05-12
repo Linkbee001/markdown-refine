@@ -132,6 +132,7 @@ export default {
 			text: '文本',
 			document: '文档',
 			other: '其他',
+			'image-list': '图片列表',
 		},
 	},
 	page: {

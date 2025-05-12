@@ -1,73 +1,66 @@
 {
-	"finalHtml": "<div id=\"doc-root\">\n    <h1 id=\"title-1\">今日汇率</h1>\n    <p id=\"date-1\" class=\"special-date\">2024.11.6/星期二</p>\n    <div id=\"para-wrapper-1\">\n      <p id=\"text-1\">今日官方汇率：909(央行)</p>\n      <p id=\"text-2\">今日黑市汇率：1050</p>\n    </div>\n    <div id=\"img-wrapper-1\" class=\"image-style-default\">\n      <img id=\"img-1\" src=\"https://via.placeholder.com/600x200?text=Placeholder+Image\" alt=\"Placeholder Image\">\n    </div>\n    <p id=\"end-1\" class=\"special-ending\">END</p>\n  </div>",
+	"finalHtml": "<div class=\"paragraph-component\" id=\"component-1\">\n    <h2 id=\"component-2\">当前关税情况</h2>\n    <p id=\"component-3\">截至2025年5月12日，中美已达成临时协议，降低贸易关税，为期90天。这似乎是缓解贸易战紧张局势的努力，但长期影响仍需观察。美国对中国进口商品的关税从145%降至30%，而中国对美国商品的关税从125%降至10%。此外，美国对芬太尼相关中国出口仍征收20%关税，并对几乎所有贸易伙伴（包括中国）保持10%基础关税。这些变化反映了双方在经济压力下的妥协，但谈判仍在继续，未来可能有进一步调整。</p>\n</div>\n\n<div class=\"paragraph-component\" id=\"component-4\">\n    <h2 id=\"component-5\">历史背景</h2>\n    <p id=\"component-6\">中美贸易战自2018年起逐步升级。2018年初，美国对中国商品的平均关税为3.8%，中国对美国商品的平均关税为7.2%。到2018年7月至9月，美国关税升至12.0%，中国升至18.3%。2020年2月的《第一阶段协议》将美国关税提高至19.3%，覆盖66.6%的中国进口；中国关税升至21.0%，覆盖58.3%的美国出口。拜登政府期间（2021-2025），美国关税略升至20.8%。特朗普第二任期（2025年1月起）进一步加剧，2025年4月美国关税达124.1%至145%，中国则报复至147.6%，覆盖所有美国出口。</p>\n</div>\n\n<div class=\"paragraph-component\" id=\"component-7\">\n    <h2 id=\"component-8\">经济与市场影响</h2>\n    <p id=\"component-9\">高关税曾导致全球经济增长放缓、通胀上升和产品短缺，可能引发美国经济衰退。中国工厂出口订单显著下降。2025年5月12日关税降低协议公布后，香港基准指数上涨3%，标普500指数期货上涨约3%，显示市场对缓和的积极反应。</p>\n</div>\n\n",
 	"documentOutline": [
 		{
-			"id": "title-1",
-			"type": "heading",
-			"contentPreview": "今日汇率",
-			"tagName": "h1",
-			"specialComponents": []
-		},
-		{
-			"id": "date-1",
-			"type": "date",
-			"contentPreview": "2024.11.6/星期二",
-			"tagName": "p",
-			"specialComponents": [
-				{
-					"type": "date",
-					"content": "2024.11.6"
-				}
-			]
-		},
-		{
-			"id": "para-wrapper-1",
-			"type": "paragraph-wrapper",
-			"contentPreview": "官方与黑市汇率...",
+			"id": "component-1",
+			"type": "paragraph",
 			"tagName": "div",
-			"specialComponents": [],
 			"children": [
 				{
-					"id": "text-1",
-					"type": "paragraph",
-					"contentPreview": "今日官方汇率：909(央行)",
-					"tagName": "p",
+					"id": "component-2",
+					"type": "heading",
+					"contentPreview": "当前关税情况",
+					"tagName": "h2",
 					"specialComponents": []
 				},
 				{
-					"id": "text-2",
-					"type": "paragraph",
-					"contentPreview": "今日黑市汇率：1050",
+					"id": "component-3",
+					"type": "text",
+					"contentPreview": "截至2025年5月12日，中美已达成临时协议，降低贸易关税，为期90天。",
 					"tagName": "p",
 					"specialComponents": []
 				}
 			]
 		},
 		{
-			"id": "img-wrapper-1",
-			"type": "image-wrapper",
-			"contentPreview": "图片容器",
+			"id": "component-4",
+			"type": "paragraph",
 			"tagName": "div",
-			"specialComponents": [],
 			"children": [
 				{
-					"id": "img-1",
-					"type": "image",
-					"contentPreview": "Placeholder Image",
-					"tagName": "img",
+					"id": "component-5",
+					"type": "heading",
+					"contentPreview": "历史背景",
+					"tagName": "h2",
+					"specialComponents": []
+				},
+				{
+					"id": "component-6",
+					"type": "text",
+					"contentPreview": "中美贸易战自2018年起逐步升级。2018年初，美国对中国商品的平均关",
+					"tagName": "p",
 					"specialComponents": []
 				}
 			]
 		},
 		{
-			"id": "end-1",
-			"type": "ending",
-			"contentPreview": "END",
-			"tagName": "p",
-			"specialComponents": [
+			"id": "component-7",
+			"type": "paragraph",
+			"tagName": "div",
+			"children": [
 				{
-					"type": "ending",
-					"content": "END"
+					"id": "component-8",
+					"type": "heading",
+					"contentPreview": "经济与市场影响",
+					"tagName": "h2",
+					"specialComponents": []
+				},
+				{
+					"id": "component-9",
+					"type": "text",
+					"contentPreview": "高关税曾导致全球经济增长放缓、通胀上升和产品短缺，可能引发美国经济",
+					"tagName": "p",
+					"specialComponents": []
 				}
 			]
 		}

@@ -72,7 +72,7 @@ export const beautifySystemPromptGenerate = (userPrompt, basicHtml) => {
     * 所有样式设计优先考虑小屏幕（手机）的阅读体验。
     * 使用相对单位 rem 或 em 作为字体大小、边距、填充的主要单位，以适应不同屏幕和用户设置。必要时可使用 %。谨慎使用固定 px 值，除非用于细微调整如 border-width。
     * 设置合适的行高 (line-height)，通常建议在 1.5 到 1.8 之间，提升大段文字的可读性。
-    * 保证元素间距：标题 (h1-h6)、段落 (p)、列表 (ul, ol)、图片 (img) 等元素之间应有明确的垂直外边距 (margin-bottom 或 margin-top)，避免内容粘连。
+    * 保证元素间距：标题 (h1-h6)、段落 (div)、列表 (ul, ol)、图片 (img) 等元素之间应有明确的垂直外边距 (margin-bottom 或 margin-top)，避免内容粘连。
 
 2.  **内容与结构保真 (Content and Structure Fidelity):**
     * **严格禁止**修改、添加或删除任何 HTML 标签结构。
