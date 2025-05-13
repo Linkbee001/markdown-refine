@@ -1,0 +1,69 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+component-merging-zh
+# 组件合并功能 (`/api/merge-components`)
+
+本项目提供了一个专门的API端点，用于合并用户在文档大纲中选择的多个HTML组件（通常是段落）。
+
+## 触发与前端交互
+
+-   **用户操作**: 用户在前端界面（主要是[`src/components/DocumentOutlinePanel.tsx`](mdc:src/components/DocumentOutlinePanel.tsx)）中选择多个可合并的组件（例如，通过复选框），并点击“合并”按钮。
+-   **前端请求**: [`src/app/page.js`](mdc:src/app/page.js) 中的 `handleMergeSelectedItems` 函数会收集当前完整HTML内容 (`initialStyledHtml`) 和被选中组件的ID列表 (`selectedItemIds`)。
+-   这些数据会通过一个POST请求发送到 `/api/merge-components` 端点。
+
+## 后端处理流程 (`src/app/api/merge-components/route.js`)
+
+1.  **输入**:
+    *   `html`: 字符串，表示当前文档的完整HTML内容。
+    *   `componentIds`: 字符串数组，包含用户希望合并的组件的ID。至少需要两个ID。
+
+2.  **核心处理逻辑**:
+    *   **输入验证**: 检查 `html` 是否存在，以及 `componentIds` 是否为包含至少两个ID的数组。
+    *   **DOM解析**: 使用 `jsdom` 将传入的 `html` 字符串解析为一个可操作的DOM对象。
+    *   **ID排序**: 调用 `sortIdsByDomOrder` 辅助函数，该函数会根据组件在实际DOM中出现的顺序对 `componentIds`进行排序。这确保了合并操作的正确性，即使ID的传入顺序与文档顺序不一致。如果某些ID在文档中未找到，它们会被过滤掉。
+    *   **定位主组件**: 获取排序后ID列表中的第一个ID (`firstItemId`)，并找到对应的HTML元素 (`firstElement`)。这个元素将作为合并的目标。
+    *   **内容合并与元素移除**:
+        *   遍历排序后ID列表中的其余ID（从第二个开始）。
+        *   对于每个ID，找到对应的 `currentElement`。
+        *   将 `currentElement` 的 `innerHTML` 追加到 `firstElement` 的 `innerHTML` 中（通常用一个空格分隔）。
+        *   从DOM中移除 `currentElement`。
+    *   **获取合并后的HTML**: 在所有选定组件合并完成后，从 `jsdom` 实例中提取 `document.body.innerHTML` 作为合并后的HTML (`mergedHtml`)。
+
+3.  **文档大纲重新生成**:
+    *   合并操作改变了文档结构，因此需要重新生成文档大纲。
+    *   **LLM调用**: 如果配置了有效的API密钥 (通过 `llmService.js` 中的 `hasValidApiKey` 检查)，则会调用LLM (通过 `invokeLlm` 函数) 来生成新的大纲。
+        *   **System Prompt**: 使用 [`src/prompts/generateDocumentOutlinePrompt.js`](mdc:src/prompts/generateDocumentOutlinePrompt.js) 中的 `generateDocumentOutlineSystemPrompt`。
+        *   **Human Prompt**: 传入 `mergedHtml`。
+        *   **Model**: 使用 `LLM_CONFIG.outlineModel` 或 `LLM_CONFIG.defaultModel`。
+    *   **Fallback机制**: 如果LLM调用失败、未配置API密钥或返回了无效数据，系统会回退到使用 [`src/services/htmlService.js`](mdc:src/services/htmlService.js) 中的 `createBasicOutlineFromHtml` 函数，根据 `mergedHtml` 生成一个基础的文档大纲。
+    *   生成的（或回退生成的）大纲存储在 `newDocumentOutline` 中。
+
+4.  **输出**:
+    *   API以JSON格式返回一个对象，包含：
+        *   `finalHtml`: 字符串，合并后并经过处理的完整HTML内容。
+        *   `documentOutline`: 数组，新生成的文档大纲。
+        *   `warning` (可选): 字符串，如果大纲生成过程中出现问题（例如LLM失败并回退），则会包含此字段。
+    *   错误情况（如输入无效、服务器内部错误）会返回相应的HTTP状态码和错误信息。
+
+## 关键依赖与服务
+
+*   **`jsdom`**: 用于在服务器端进行DOM操作（解析HTML、查找元素、修改内容、移除元素）。
+*   **[`src/services/llmService.js`](mdc:src/services/llmService.js)**:
+    *   `invokeLlm`: 封装了调用大型语言模型的逻辑。
+    *   `hasValidApiKey`: 检查是否存在有效的API密钥。
+    *   `LLM_CONFIG`: 提供LLM相关的配置（模型名称、temperature等）。
+*   **[`src/services/htmlService.js`](mdc:src/services/htmlService.js)**:
+    *   `createBasicOutlineFromHtml`: 在LLM不可用时，提供基于HTML结构的基础大纲生成能力。
+*   **Prompt文件**:
+    *   [`src/prompts/generateDocumentOutlinePrompt.js`](mdc:src/prompts/generateDocumentOutlinePrompt.js): 定义了用于生成文档大纲的系统提示。
+
+## 前端响应处理
+
+-   [`src/app/page.js`](mdc:src/app/page.js) 在收到 `/api/merge-components` 的成功响应后，会使用返回的 `finalHtml` 和 `documentOutline` 更新应用状态（例如 `mainHtmlContent`、`initialStyledHtml` 和 `mainOutline`）。
+-   同时，它会清空已选中的组件ID列表 (`selectedItemIds`) 并重置相关状态。
+
+
+该API端点是实现组件合并功能的后端核心，确保了HTML内容的正确修改和文档结构的同步更新。

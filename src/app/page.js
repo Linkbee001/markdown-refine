@@ -18,6 +18,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 // Import Components
 import HeaderControls from '../components/HeaderControls';
 import BeautifyModal from '../components/BeautifyModal';
+import ReBeautifyComponentModal from '../components/ReBeautifyComponentModal';
 import DocumentOutlinePanel from "../components/DocumentOutlinePanel";
 import StyleEditor from "../components/StyleEditor";
 import PreviewPanel from '../components/PreviewPanel';
@@ -29,12 +30,17 @@ export default function Home() {
 	const router = useRouter();
 	const t = useTranslations('page');
 	const tStyleEditor = useTranslations('styleEditor');
+	const tReBeautifyModal = useTranslations('reBeautifyComponentModal');
 
 	// === State for Modal ===
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMarkdown, setModalMarkdown] = useState(t('beautifyModal.initialMarkdown'));
 	const [modalPrompt, setModalPrompt] = useState(t('beautifyModal.initialPrompt'));
 	const [currentUserPrompt, setCurrentUserPrompt] = useState('');
+
+	// === State for ReBeautifyComponentModal ===
+	const [isReBeautifyModalOpen, setIsReBeautifyModalOpen] = useState(false);
+	const [reBeautifyModalInitialPrompt, setReBeautifyModalInitialPrompt] = useState('');
 
 	// === State for Main Editor/Preview Display ===
 	const [mainHtmlContent, setMainHtmlContent] = useState('');
@@ -366,24 +372,50 @@ export default function Home() {
 	]);
 
 	const handleReBeautifyComponent = useCallback(async () => {
-		// Ensure not in merge mode and a single item is selected
+		// This function is now primarily to open the modal.
+		// The actual API call logic will be in handleComponentReBeautifySubmit.
 		if (isMergeModeEnabled || !styleEditorElementId || !initialStyledHtml || !currentUserPrompt || isLoading) {
-			console.warn("Cannot re-beautify component. Merge mode active, or missing ID, initial HTML, prompt, or already loading.");
+			console.warn("Cannot open re-beautify modal. Conditions not met (merge mode, selection, HTML, prompt, loading).");
+			return;
+		}
+		// Optionally set an initial prompt for the modal, e.g., based on element type or empty
+		setReBeautifyModalInitialPrompt(''); // Or a specific default prompt
+		setIsReBeautifyModalOpen(true);
+	}, [
+		isMergeModeEnabled,
+		styleEditorElementId,
+		initialStyledHtml,
+		currentUserPrompt,
+		isLoading,
+		setIsReBeautifyModalOpen,
+		setReBeautifyModalInitialPrompt
+	]);
+
+	// New handler for submitting component re-beautification from the modal
+	const handleComponentReBeautifySubmit = useCallback(async ({ componentPrompt }) => {
+		if (isMergeModeEnabled || !styleEditorElementId || !initialStyledHtml || !currentUserPrompt || isLoading || !componentPrompt) {
+			console.warn("Cannot re-beautify component. Merge mode active, or missing ID, initial HTML, base prompt, specific prompt, or already loading.");
+			setError(tReBeautifyModal('error.submissionFailedConditions')); // Add this translation
 			return;
 		}
 
-		console.log(`Requesting re-beautification for ${styleEditorElementId} with prompt: "${currentUserPrompt}"`);
+		console.log(`Requesting re-beautification for ${styleEditorElementId} with base prompt: "${currentUserPrompt}" and specific prompt: "${componentPrompt}"`);
 		setIsLoading(true);
-		setError('');
+		setError(''); // Clear previous errors
+
+		// Combine prompts (example strategy)
+		const combinedPrompt = `${t('promptCombination.overall')}: ${currentUserPrompt}. ${t('promptCombination.specific')}: ${componentPrompt}`;
+		// Example: "Overall style: technical blog. Specific changes for this paragraph: make it more concise."
+		// Add 'promptCombination.overall' and 'promptCombination.specific' to your translation files.
 
 		try {
 			const response = await fetch('/api/beautify-component', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					html: initialStyledHtml,
+					html: initialStyledHtml, // Send base HTML
 					componentId: styleEditorElementId,
-					prompt: currentUserPrompt,
+					prompt: combinedPrompt, // Send combined prompt
 				}),
 			});
 
@@ -395,31 +427,52 @@ export default function Home() {
 
 			if (data.html) {
 				console.log("Re-beautification successful. Updating HTML.");
-				setInitialStyledHtml(data.html);
-				setMainHtmlContent(data.html);
+				setInitialStyledHtml(data.html); // Update base HTML with the re-beautified version
+				setMainHtmlContent(data.html);   // Update displayed HTML
+
+				// Reset styles and selections as the base HTML has changed
 				setCustomStyles({});
+				// Deselect the item to avoid confusion, or re-select if necessary
+				// For simplicity, deselecting here.
+				const previouslySelectedId = styleEditorElementId; // Store before resetting
 				setSelectedItemIds([]);
 				setStyleEditorElementId(null);
 				setStyleEditorElementType("");
 				setStyleEditorElementTagName("");
 				setStyleEditorInitialStyles({});
 				setError('');
+
+				// If you want to re-select the item and update its details in style editor:
+				// This requires that the ID remains consistent after re-beautification
+				// const outlineItem = findItemById(mainOutline, previouslySelectedId);
+				// if (outlineItem) {
+				// setSelectedItemIds([previouslySelectedId]);
+				// setStyleEditorElementId(previouslySelectedId);
+				// setStyleEditorElementType(outlineItem.type);
+				// setStyleEditorElementTagName(outlineItem.tagName);
+				// setStyleEditorInitialStyles({}); // Styles from AI are now in initialStyledHtml
+				// }
+
 			} else {
-				setError(t('error.apiMissingData'));
+				setError(t('error.apiMissingData')); // Existing translation
 			}
 
 		} catch (e) {
 			console.error("Frontend Error calling /api/beautify-component:", e);
-			setError(t('error.reBeautifyFailed', { message: e.message }));
+			setError(t('error.reBeautifyFailed', { message: e.message })); // Existing translation
 		} finally {
 			setIsLoading(false);
+			setIsReBeautifyModalOpen(false); // Close the modal
 		}
 	}, [
-		isMergeModeEnabled, // Add dependency
+		isMergeModeEnabled,
 		styleEditorElementId,
 		initialStyledHtml,
 		currentUserPrompt,
 		isLoading,
+		initialStyledHtml, // Added initialStyledHtml as it's used in the body
+		mainOutline, // Added mainOutline for potential re-selection logic
+		findItemById, // Added findItemById for potential re-selection logic
 		setInitialStyledHtml,
 		setMainHtmlContent,
 		setCustomStyles,
@@ -430,7 +483,9 @@ export default function Home() {
 		setStyleEditorInitialStyles,
 		setIsLoading,
 		setError,
-		t
+		setIsReBeautifyModalOpen, // Added to close modal
+		t, // Added t for general translations
+		tReBeautifyModal // Added for modal specific translations
 	]);
 
 	// --- Functions for Merge Feature ---
@@ -664,6 +719,23 @@ export default function Home() {
 					error={error}
 					onClose={() => { setIsModalOpen(false); setError(''); }}
 					onSubmit={handleBeautify}
+				/>
+			)}
+
+			{/* Added ReBeautifyComponentModal instance */}
+			{isReBeautifyModalOpen && (
+				<ReBeautifyComponentModal
+					open={isReBeautifyModalOpen}
+					onClose={() => {
+						setIsReBeautifyModalOpen(false);
+						setError(''); // Clear any errors specific to this modal interaction
+					}}
+					onSubmit={handleComponentReBeautifySubmit}
+					isLoading={isLoading} // Assuming global isLoading is fine, or create specific one
+					error={error} // Assuming global error is fine
+					initialPrompt={reBeautifyModalInitialPrompt}
+					elementId={styleEditorElementId}
+					elementType={styleEditorElementType}
 				/>
 			)}
 		</Box>

@@ -150,6 +150,19 @@ export default {
 			tooltipDisable: '禁用段落合并模式',
 		},
 	},
+	reBeautifyComponentModal: {
+		title: "为组件指定重塑样式",
+		promptLabel: "组件特定样式提示词",
+		promptPlaceholder: "例如：使这段文字更简洁、使用活泼的色调...",
+		promptTip: "此提示词将与全局样式提示词合并，共同作用于选中的组件。",
+		cancel: "取消",
+		submit: "确认重塑",
+		processing: "处理中...",
+		errorPrefix: "错误：{message}",
+		error: {
+			submissionFailedConditions: "无法提交：必要条件未满足（例如，未选择组件、提示词缺失或正在加载）。"
+		}
+	},
 	page: {
 		reBeautifyButton: {
 			label: "AI 重塑选中组件"
@@ -211,4 +224,5 @@ export default {
 	generic: {
 		merge: '合并',
 	},
+
 }; 
