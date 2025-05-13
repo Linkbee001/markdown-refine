@@ -28,6 +28,7 @@ import testData from '../data/testBeautifierResponse.json';
 export default function Home() {
 	const router = useRouter();
 	const t = useTranslations('page');
+	const tStyleEditor = useTranslations('styleEditor');
 
 	// === State for Modal ===
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,12 +43,14 @@ export default function Home() {
 	const [customStyles, setCustomStyles] = useState({});
 
 	// === State for UI Control ===
-	const [selectedItemId, setSelectedItemId] = useState(null);
+	const [selectedItemIds, setSelectedItemIds] = useState([]);
+	const [isMergeModeEnabled, setIsMergeModeEnabled] = useState(false);
 
 	// === State for Style Editor Panel ===
-	const [selectedItemType, setSelectedItemType] = useState("");
-	const [selectedItemTagName, setSelectedItemTagName] = useState("");
-	const [selectedItemStyles, setSelectedItemStyles] = useState({});
+	const [styleEditorElementId, setStyleEditorElementId] = useState(null);
+	const [styleEditorElementType, setStyleEditorElementType] = useState("");
+	const [styleEditorElementTagName, setStyleEditorElementTagName] = useState("");
+	const [styleEditorInitialStyles, setStyleEditorInitialStyles] = useState({});
 
 	// === Other Core State ===
 	const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +62,19 @@ export default function Home() {
 	useEffect(() => {
 		setHasMounted(true);
 	}, []);
+
+	// --- Helper function to flatten the outline - DEFINE INSIDE Home component ---
+	const flattenOutline = (items) => {
+		let flat = [];
+		items.forEach(item => {
+			flat.push(item);
+			if (item.children && item.children.length > 0) {
+				// Recursive call needs to reference the function within this scope
+				flat = flat.concat(flattenOutline(item.children));
+			}
+		});
+		return flat;
+	};
 
 	// --- Helper function to apply styles to an HTML string ---
 	const getStyledHtml = (baseHtml, stylesById) => {
@@ -105,8 +121,11 @@ export default function Home() {
 		setInitialStyledHtml('');
 		setMainOutline([]);
 		setCustomStyles({});
-		setSelectedItemId(null);
-		setSelectedItemStyles({});
+		setSelectedItemIds([]);
+		setStyleEditorElementId(null);
+		setStyleEditorElementType("");
+		setStyleEditorElementTagName("");
+		setStyleEditorInitialStyles({});
 		setCurrentUserPrompt(modalPmt);
 
 		try {
@@ -142,8 +161,11 @@ export default function Home() {
 		setIsLoading,
 		setError,
 		setCustomStyles,
-		setSelectedItemId,
-		setSelectedItemStyles,
+		setSelectedItemIds,
+		setStyleEditorElementId,
+		setStyleEditorElementType,
+		setStyleEditorElementTagName,
+		setStyleEditorInitialStyles,
 		setCurrentUserPrompt,
 		t
 	]);
@@ -155,8 +177,11 @@ export default function Home() {
 		setError('');
 		setCopyButtonText(t('copyButton.default'));
 		setCustomStyles({});
-		setSelectedItemId(null);
-		setSelectedItemStyles({});
+		setSelectedItemIds([]);
+		setStyleEditorElementId(null);
+		setStyleEditorElementType("");
+		setStyleEditorElementTagName("");
+		setStyleEditorInitialStyles({});
 		setCurrentUserPrompt(t('beautifyModal.initialPrompt'));
 
 		try {
@@ -192,8 +217,11 @@ export default function Home() {
 		setIsLoading,
 		setError,
 		setCopyButtonText,
-		setSelectedItemId,
-		setSelectedItemStyles,
+		setSelectedItemIds,
+		setStyleEditorElementId,
+		setStyleEditorElementType,
+		setStyleEditorElementTagName,
+		setStyleEditorInitialStyles,
 		setCurrentUserPrompt,
 		t,
 		mainHtmlContent
@@ -259,24 +287,60 @@ export default function Home() {
 		return null;
 	};
 
-	// Handle Selection from Outline or Preview Click
-	const handleOutlineItemSelect = useCallback((id) => {
-		setSelectedItemId(id);
+	// Handle SINGLE item selection in NORMAL mode
+	const handleItemClickNormalMode = useCallback((id) => {
+		// Should only be called when isMergeModeEnabled is false
+		if (isMergeModeEnabled) return;
+
+		setSelectedItemIds([id]); // Set selection to only this ID
+
+		// Update Style Editor state
 		const outlineItem = findItemById(mainOutline, id);
-		setSelectedItemType(outlineItem ? outlineItem.type : t('styleEditor.unknownType'));
-		setSelectedItemTagName(outlineItem ? outlineItem.tagName : "");
-		setSelectedItemStyles({});
-	}, [mainOutline, t, setSelectedItemId, setSelectedItemType, setSelectedItemTagName, setSelectedItemStyles]);
+		if (outlineItem) {
+			setStyleEditorElementId(id);
+			setStyleEditorElementType(outlineItem.type);
+			setStyleEditorElementTagName(outlineItem.tagName);
+			setStyleEditorInitialStyles(customStyles[id] || {});
+		} else {
+			setStyleEditorElementId(null);
+			setStyleEditorElementType("");
+			setStyleEditorElementTagName("");
+			setStyleEditorInitialStyles({});
+		}
+	}, [
+		isMergeModeEnabled, // Make sure not in merge mode
+		mainOutline,
+		customStyles,
+		setSelectedItemIds,
+		setStyleEditorElementId,
+		setStyleEditorElementType,
+		setStyleEditorElementTagName,
+		setStyleEditorInitialStyles,
+	]);
+
+	// Handle Checkbox toggle for item selection in MERGE mode
+	const handleToggleMergeSelection = useCallback((id) => {
+		// Should only be called when isMergeModeEnabled is true
+		if (!isMergeModeEnabled) return;
+
+		setSelectedItemIds(prevIds =>
+			prevIds.includes(id)
+				? prevIds.filter(prevId => prevId !== id) // Remove ID
+				: [...prevIds, id] // Add ID
+		);
+		// DO NOT update style editor state here
+	}, [isMergeModeEnabled, setSelectedItemIds]);
 
 	const handleApplyManualStyles = useCallback((stylesToApply) => {
-		if (!selectedItemId) return;
-		console.log(`Applying manual styles to ${selectedItemId}:`, stylesToApply);
+		// Ensure not in merge mode and an item is selected for styling
+		if (isMergeModeEnabled || !styleEditorElementId) return;
+		console.log(`Applying manual styles to ${styleEditorElementId}:`, stylesToApply);
 
 		setCustomStyles((prevCustomStyles) => {
 			const newCustomStyles = {
 				...prevCustomStyles,
-				[selectedItemId]: {
-					...(prevCustomStyles[selectedItemId] || {}),
+				[styleEditorElementId]: {
+					...(prevCustomStyles[styleEditorElementId] || {}),
 					...stylesToApply
 				}
 			};
@@ -290,16 +354,25 @@ export default function Home() {
 			return newCustomStyles;
 		});
 
-		setSelectedItemStyles(prev => ({ ...prev, ...stylesToApply }));
-	}, [selectedItemId, initialStyledHtml, getStyledHtml, setCustomStyles, setSelectedItemStyles, setMainHtmlContent]);
+		setStyleEditorInitialStyles(prev => ({ ...prev, ...stylesToApply }));
+	}, [
+		isMergeModeEnabled, // Add dependency
+		styleEditorElementId,
+		initialStyledHtml,
+		getStyledHtml,
+		setCustomStyles,
+		setStyleEditorInitialStyles,
+		setMainHtmlContent,
+	]);
 
 	const handleReBeautifyComponent = useCallback(async () => {
-		if (!selectedItemId || !initialStyledHtml || !currentUserPrompt || isLoading) {
-			console.warn("Cannot re-beautify component. Missing ID, initial HTML, prompt, or already loading.");
+		// Ensure not in merge mode and a single item is selected
+		if (isMergeModeEnabled || !styleEditorElementId || !initialStyledHtml || !currentUserPrompt || isLoading) {
+			console.warn("Cannot re-beautify component. Merge mode active, or missing ID, initial HTML, prompt, or already loading.");
 			return;
 		}
 
-		console.log(`Requesting re-beautification for ${selectedItemId} with prompt: "${currentUserPrompt}"`);
+		console.log(`Requesting re-beautification for ${styleEditorElementId} with prompt: "${currentUserPrompt}"`);
 		setIsLoading(true);
 		setError('');
 
@@ -309,7 +382,7 @@ export default function Home() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					html: initialStyledHtml,
-					componentId: selectedItemId,
+					componentId: styleEditorElementId,
 					prompt: currentUserPrompt,
 				}),
 			});
@@ -325,10 +398,11 @@ export default function Home() {
 				setInitialStyledHtml(data.html);
 				setMainHtmlContent(data.html);
 				setCustomStyles({});
-				setSelectedItemId(null);
-				setSelectedItemStyles({});
-				setSelectedItemType("");
-				setSelectedItemTagName("");
+				setSelectedItemIds([]);
+				setStyleEditorElementId(null);
+				setStyleEditorElementType("");
+				setStyleEditorElementTagName("");
+				setStyleEditorInitialStyles({});
 				setError('');
 			} else {
 				setError(t('error.apiMissingData'));
@@ -340,8 +414,164 @@ export default function Home() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [selectedItemId, initialStyledHtml, currentUserPrompt, isLoading, setInitialStyledHtml, setMainHtmlContent, setCustomStyles, setSelectedItemId, setSelectedItemStyles, setSelectedItemType, setSelectedItemTagName, setIsLoading, setError, t]);
+	}, [
+		isMergeModeEnabled, // Add dependency
+		styleEditorElementId,
+		initialStyledHtml,
+		currentUserPrompt,
+		isLoading,
+		setInitialStyledHtml,
+		setMainHtmlContent,
+		setCustomStyles,
+		setSelectedItemIds,
+		setStyleEditorElementId,
+		setStyleEditorElementType,
+		setStyleEditorElementTagName,
+		setStyleEditorInitialStyles,
+		setIsLoading,
+		setError,
+		t
+	]);
 
+	// --- Functions for Merge Feature ---
+
+	// Check if the selected items are mergeable
+	const isMergeable = useCallback((ids) => {
+		console.log("[isMergeable] Checking IDs:", ids); // Log input IDs
+		if (ids.length < 2) {
+			console.log("[isMergeable] Result: false (less than 2 items selected)");
+			return false;
+		}
+
+		// Use mainOutline directly as it represents the top-level items
+		const topLevelItems = mainOutline;
+		console.log("[isMergeable] Top-Level Outline:", topLevelItems);
+
+		const selectedTopLevelParagraphsInfo = []; // Stores { id, originalIndex, type }
+		const mergeableTypes = ['paragraph', 'paragraph-wrapper']; // Define mergeable types
+
+		for (let i = 0; i < topLevelItems.length; i++) {
+			const item = topLevelItems[i];
+			if (ids.includes(item.id)) {
+				console.log(`[isMergeable] Found top-level item ${item.id} at index ${i} with type: ${item.type}`);
+
+				// Check if this selected item is a mergeable type
+				if (!mergeableTypes.includes(item.type)) {
+					console.log(`[isMergeable] Result: false (selected top-level item ${item.id} has non-mergeable type: ${item.type})`);
+					return false;
+				}
+				selectedTopLevelParagraphsInfo.push({ id: item.id, originalIndex: i, type: item.type });
+			}
+		}
+
+		// Ensure all provided IDs were found among top-level, mergeable-type items
+		if (selectedTopLevelParagraphsInfo.length !== ids.length) {
+			console.warn("[isMergeable] Could not find all selected IDs among top-level, mergeable paragraph items.");
+			console.log("[isMergeable] Result: false (data missing or type mismatch for some IDs at top level)");
+			return false;
+		}
+
+		// Sort the selected items by their original index in the top-level outline
+		selectedTopLevelParagraphsInfo.sort((a, b) => a.originalIndex - b.originalIndex);
+
+		const selectedIndices = selectedTopLevelParagraphsInfo.map(info => info.originalIndex);
+		console.log("[isMergeable] Sorted Original Indices of selected top-level paragraphs:", selectedIndices);
+
+		// Check for consecutiveness among these original indices
+		for (let i = 1; i < selectedIndices.length; i++) {
+			console.log(`[isMergeable] Checking top-level consecutiveness: Index ${selectedIndices[i]} vs ${selectedIndices[i - 1] + 1}`);
+			if (selectedIndices[i] !== selectedIndices[i - 1] + 1) {
+				console.log("[isMergeable] Result: false (top-level paragraph items are not consecutive)");
+				return false; // Not consecutive
+			}
+		}
+
+		console.log("[isMergeable] Result: true (all checks passed for top-level paragraphs)");
+		return true; // All checks passed
+	}, [mainOutline]); // Dependency is mainOutline
+
+	// Handle merging the selected items
+	const handleMergeSelectedItems = useCallback(async (idsToMerge) => {
+		console.log("Requesting merge for items:", idsToMerge);
+		// Ensure IDs are sorted by document order before sending to backend
+		// This relies on the order they appear in the flattened outline
+		const flatOutline = flattenOutline(mainOutline); // You need the flattenOutline helper defined earlier
+		const idOrderMap = new Map();
+		flatOutline.forEach((item, index) => {
+			if (idsToMerge.includes(item.id)) {
+				idOrderMap.set(item.id, index);
+			}
+		});
+		const sortedIdsToMerge = idsToMerge.slice().sort((a, b) => (idOrderMap.get(a) ?? Infinity) - (idOrderMap.get(b) ?? Infinity));
+
+		if (sortedIdsToMerge.length !== idsToMerge.length) {
+			console.error("Merge handler: Could not determine order for all selected IDs.");
+			setError("Failed to determine the order of items to merge.");
+			return;
+		}
+
+		console.log("Merge handler: Sorted IDs to merge:", sortedIdsToMerge);
+
+		setIsLoading(true);
+		setError('');
+		try {
+			const response = await fetch('/api/merge-components', { // Call the new API endpoint
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				// Send initialStyledHtml (base HTML before custom styles) and the sorted IDs
+				body: JSON.stringify({ html: initialStyledHtml, componentIds: sortedIdsToMerge }),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				// Use error message from backend if available
+				throw new Error(data.error || `Merge failed with status: ${response.status}`);
+			}
+			if (data.finalHtml && data.documentOutline) {
+				console.log("Merge successful. Updating state.");
+				// Update state with the new HTML and outline from the backend
+				setInitialStyledHtml(data.finalHtml);
+				setMainHtmlContent(data.finalHtml);
+				setMainOutline(data.documentOutline);
+				setSelectedItemIds([]); // Clear selection
+				setCustomStyles({}); // Clear custom styles as base HTML changed
+				setError('');
+				// Reset style editor state as well
+				setStyleEditorElementId(null);
+				setStyleEditorElementType("");
+				setStyleEditorElementTagName("");
+				setStyleEditorInitialStyles({});
+				if (data.warning) { // Display warning from backend if any (e.g., outline skip)
+					console.warn("Merge API Warning:", data.warning);
+					// Optionally show this warning to the user
+				}
+			} else {
+				// This case might happen if backend skips outline generation without error
+				setError('Merge API response missing data (HTML or Outline).');
+			}
+		} catch (e) {
+			console.error("Error merging components in frontend:", e);
+			setError(`Merge failed: ${e.message}`);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [initialStyledHtml, mainOutline, setIsLoading, setError, setInitialStyledHtml, setMainHtmlContent, setMainOutline, setSelectedItemIds, setCustomStyles, setStyleEditorElementId, setStyleEditorElementType, setStyleEditorElementTagName, setStyleEditorInitialStyles]);
+
+	// --- Function to toggle merge mode ---
+	const toggleMergeMode = () => {
+		setIsMergeModeEnabled(prev => {
+			const newMode = !prev;
+			if (!newMode) {
+				setSelectedItemIds([]);
+				setStyleEditorElementId(null);
+				setStyleEditorElementType("");
+				setStyleEditorElementTagName("");
+				setStyleEditorInitialStyles({});
+			}
+			return newMode;
+		});
+	};
+
+	// --- Render ---
 	return (
 		<Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
 			<HeaderControls
@@ -359,10 +589,16 @@ export default function Home() {
 					elevation={1}
 					sx={{ width: 250, overflowY: 'auto', flexShrink: 0, borderRight: '1px solid #e0e0e0' }}
 				>
+					{console.log(`[page.js] Rendering DocumentOutlinePanel with: isMergeModeEnabled=${isMergeModeEnabled}, selectedItemIds=${JSON.stringify(selectedItemIds)}, isMergeableResult=${isMergeable(selectedItemIds)}`)}
 					<DocumentOutlinePanel
 						outline={mainOutline}
-						onSelectItem={handleOutlineItemSelect}
-						selectedId={selectedItemId}
+						selectedIds={selectedItemIds}
+						onToggleMergeSelection={handleToggleMergeSelection}
+						onItemClickNormalMode={handleItemClickNormalMode}
+						isMergeable={isMergeable}
+						onMergeItems={handleMergeSelectedItems}
+						isMergeModeEnabled={isMergeModeEnabled}
+						onToggleMergeMode={toggleMergeMode}
 					/>
 				</Paper>
 
@@ -373,7 +609,8 @@ export default function Home() {
 						isLoading={isLoading}
 						error={error}
 						onClearError={() => setError('')}
-						selectedElementId={selectedItemId}
+						selectedElementIds={selectedItemIds}
+						isMergeModeEnabled={isMergeModeEnabled}
 					/>
 				</Box>
 
@@ -387,20 +624,32 @@ export default function Home() {
 							color="secondary"
 							startIcon={<AutoFixHighIcon />}
 							onClick={handleReBeautifyComponent}
-							disabled={!selectedItemId || isLoading || !initialStyledHtml || !currentUserPrompt}
+							disabled={isMergeModeEnabled || selectedItemIds.length !== 1 || isLoading || !initialStyledHtml || !currentUserPrompt}
 							sx={{ flexShrink: 0, mt: 1, mx: 1 }}
 						>
 							{t('reBeautifyButton.label')}
 						</Button>
 
 						<Box sx={{ flexGrow: 1, overflowY: 'auto', mt: 1 }}>
-							<StyleEditor
-								elementId={selectedItemId}
-								elementType={selectedItemType}
-								elementTagName={selectedItemTagName}
-								initialStyles={selectedItemStyles}
-								onApplyStyles={handleApplyManualStyles}
-							/>
+							{!isMergeModeEnabled && selectedItemIds.length === 1 ? (
+								<StyleEditor
+									elementId={styleEditorElementId}
+									elementType={styleEditorElementType}
+									elementTagName={styleEditorElementTagName}
+									initialStyles={styleEditorInitialStyles}
+									onApplyStyles={handleApplyManualStyles}
+								/>
+							) : (
+								<Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+									{isMergeModeEnabled
+										? tStyleEditor('editingDisabledInMergeMode')
+										: (selectedItemIds.length === 0
+											? tStyleEditor('selectComponentPrompt')
+											: tStyleEditor('multipleSelectedPrompt')
+										)
+									}
+								</Box>
+							)}
 						</Box>
 					</Stack>
 				</Paper>

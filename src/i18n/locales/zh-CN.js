@@ -41,6 +41,8 @@ export default {
 		applyButton: '应用样式',
 		selectedComponent: '已选组件: {type}',
 		tag: '标签',
+		multipleSelectedPrompt: '请选择单个组件编辑样式，或选择多个连续段落进行合并。',
+		editingDisabledInMergeMode: '合并模式下禁用样式编辑。',
 		tabs: {
 			appearance: '外观',
 			typography: '排版',
@@ -134,6 +136,19 @@ export default {
 			other: '其他',
 			'image-list': '图片列表',
 		},
+		mergeButton: {
+			tooltip: '合并选中的连续段落',
+			disabledTooltip: '请选择2个或以上连续的段落以进行合并',
+			disabledModeTooltip: '请先启用合并模式',
+		},
+		checkboxTooltip: {
+			enabled: '选择/取消选择此项以合并',
+			disabled: '请先启用合并模式以选择项目',
+		},
+		toggleMergeModeButton: {
+			tooltipEnable: '启用段落合并模式',
+			tooltipDisable: '禁用段落合并模式',
+		},
 	},
 	page: {
 		reBeautifyButton: {
@@ -191,5 +206,9 @@ export default {
 		cancel: '取消',
 		processing: '处理中...',
 		startBeautify: '开始美化',
+	},
+	// 添加通用命名空间
+	generic: {
+		merge: '合并',
 	},
 }; 

@@ -41,6 +41,8 @@ export default {
 		applyButton: 'Apply Styles',
 		selectedComponent: 'Selected Component: {type}',
 		tag: 'Tag',
+		multipleSelectedPrompt: 'Select a single component to edit styles, or multiple components to merge.',
+		editingDisabledInMergeMode: 'Style editing is disabled in merge mode.',
 		tabs: {
 			appearance: 'Appearance',
 			typography: 'Typography',
@@ -131,6 +133,19 @@ export default {
 			paragraph: 'Paragraph',
 			unknown: 'Unknown',
 		},
+		mergeButton: {
+			tooltip: 'Merge selected consecutive paragraphs',
+			disabledTooltip: 'Select 2 or more consecutive paragraphs to merge',
+			disabledModeTooltip: 'Enable merge mode first',
+		},
+		checkboxTooltip: {
+			enabled: 'Select/Deselect item for merge',
+			disabled: 'Enable merge mode to select items',
+		},
+		toggleMergeModeButton: {
+			tooltipEnable: 'Enable paragraph merge mode',
+			tooltipDisable: 'Disable paragraph merge mode',
+		},
 	},
 	page: {
 		reBeautifyButton: {
@@ -188,5 +203,9 @@ export default {
 		cancel: 'Cancel',
 		processing: 'Processing...',
 		startBeautify: 'Start Beautify',
+	},
+	// Add generic namespace
+	generic: {
+		merge: 'Merge',
 	},
 }; 
